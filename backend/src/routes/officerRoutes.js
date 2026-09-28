@@ -4,11 +4,42 @@ const router = express.Router();
 
 const {
   createOfficer,
-  getOfficers,
+  getOfficerProfile,
+  getOfficerDashboard,
+  getOfficerQueue,
 } = require("../controllers/officerController");
 
-router.post("/", createOfficer);
+const {
+  protect,
+  authorize,
+} = require("../middleware/authMiddleware");
 
-router.get("/", getOfficers);
+router.post(
+  "/",
+  protect,
+  authorize("officer", "admin"),
+  createOfficer
+);
+
+router.get(
+  "/profile",
+  protect,
+  authorize("officer"),
+  getOfficerProfile
+);
+
+router.get(
+  "/dashboard",
+  protect,
+  authorize("officer"),
+  getOfficerDashboard
+);
+
+router.get(
+  "/queue",
+  protect,
+  authorize("officer"),
+  getOfficerQueue
+);
 
 module.exports = router;

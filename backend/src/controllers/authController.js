@@ -81,16 +81,16 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validation
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Email and Password are required",
+        message: "Email and password are required",
       });
     }
 
-    // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+    });
 
     if (!user) {
       return res.status(401).json({
@@ -99,22 +99,23 @@ const login = async (req, res) => {
       });
     }
 
-    // Compare password
-    const isMatch = await bcrypt.compare(password, user.password);
+    const passwordMatch = await bcrypt.compare(
+      password,
+      user.password
+    );
 
-    if (!isMatch) {
+    if (!passwordMatch) {
       return res.status(401).json({
         success: false,
         message: "Invalid email or password",
       });
     }
 
-    // Generate JWT
     const token = generateToken(user._id, user.role);
 
     res.status(200).json({
       success: true,
-      message: "Login Successful",
+      message: "Login successful",
       token,
       user: {
         id: user._id,
@@ -124,17 +125,15 @@ const login = async (req, res) => {
         role: user.role,
       },
     });
-
   } catch (error) {
     console.error("Login Error:", error);
 
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Internal Server Error",
     });
   }
 };
-
 module.exports = {
   register,
   login,

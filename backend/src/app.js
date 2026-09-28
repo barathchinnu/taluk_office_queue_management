@@ -8,6 +8,8 @@ const serviceRoutes = require("./routes/serviceRoutes");
 const officerRoutes = require("./routes/officerRoutes");
 const counterRoutes = require("./routes/counterRoutes");
 const appointmentRoutes = require("./routes/appointmentRoutes");
+const tokenRoutes = require("./routes/tokenRoutes");
+const citizenRoutes = require("./routes/citizenRoutes");
 
 app.use(cors());
 app.use(express.json());
@@ -19,6 +21,8 @@ app.use("/api/services", serviceRoutes);
 app.use("/api/officers", officerRoutes);
 app.use("/api/counters", counterRoutes);
 app.use("/api/appointments", appointmentRoutes);
+app.use("/api/tokens", tokenRoutes);
+app.use("/api/citizens", citizenRoutes);
 
 app.get("/", (req, res) => {
     res.json({

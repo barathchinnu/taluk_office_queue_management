@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const officerSchema = new mongoose.Schema(
   {
+    // User account linked to this officer
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -9,12 +10,14 @@ const officerSchema = new mongoose.Schema(
       unique: true,
     },
 
+    // Department where the officer works
     department: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Department",
       required: true,
     },
 
+    // Government employee ID
     employeeId: {
       type: String,
       required: true,
@@ -22,17 +25,20 @@ const officerSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Officer designation
     designation: {
       type: String,
       required: true,
       trim: true,
     },
 
+    // Whether officer is currently available
     isAvailable: {
       type: Boolean,
       default: false,
     },
 
+    // Whether officer account is active
     isActive: {
       type: Boolean,
       default: true,
