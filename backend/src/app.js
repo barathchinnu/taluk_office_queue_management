@@ -7,6 +7,7 @@ const departmentRoutes = require("./routes/departmentRoutes");
 const serviceRoutes = require("./routes/serviceRoutes");
 const officerRoutes = require("./routes/officerRoutes");
 const counterRoutes = require("./routes/counterRoutes");
+const appointmentRoutes = require("./routes/appointmentRoutes");
 
 app.use(cors());
 app.use(express.json());
@@ -17,6 +18,7 @@ app.use("/api/departments", departmentRoutes);
 app.use("/api/services", serviceRoutes);
 app.use("/api/officers", officerRoutes);
 app.use("/api/counters", counterRoutes);
+app.use("/api/appointments", appointmentRoutes);
 
 app.get("/", (req, res) => {
     res.json({
