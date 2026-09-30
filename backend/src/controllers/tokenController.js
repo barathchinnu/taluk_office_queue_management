@@ -303,37 +303,90 @@ const getQueue = async (req, res) => {
 const getPublicQueue = async (req, res) => {
   try {
     const { departmentId } = req.params;
-
-    if (!departmentId || !mongoose.Types.ObjectId.isValid(departmentId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid Department ID is required",
-      });
-    }
-
-    const department = await Department.findById(departmentId).select("name code");
-    if (!department) {
-      return res.status(404).json({
-        success: false,
-        message: "Department not found",
-      });
-    }
+    const isAll = !departmentId || departmentId === "all";
 
     const { startOfDay, endOfDay } = getDayBounds();
 
+    let deptFilter = {};
+    let targetDept = null;
+
+    if (!isAll) {
+      if (!mongoose.Types.ObjectId.isValid(departmentId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Valid Department ID is required",
+        });
+      }
+
+      targetDept = await Department.findById(departmentId).select("name code");
+      if (!targetDept) {
+        return res.status(404).json({
+          success: false,
+          message: "Department not found",
+        });
+      }
+      deptFilter = { department: departmentId };
+    }
+
+    // 1. Fetch active counters
+    const counterFilter = { isActive: true };
+    if (!isAll) {
+      counterFilter.department = departmentId;
+    }
+
+    const allCounters = await Counter.find(counterFilter)
+      .populate("department", "name code")
+      .populate({
+        path: "officer",
+        select: "designation employeeId",
+      })
+      .sort({ counterNumber: 1 });
+
+    // 2. Fetch active tokens today
     const tokens = await Token.find({
-      department: departmentId,
+      ...deptFilter,
       queueDate: { $gte: startOfDay, $lte: endOfDay },
       status: { $in: ["waiting", "called", "serving"] },
     })
-      .select("tokenNumber tokenDisplay status counter service calledAt servingAt")
+      .select("tokenNumber tokenDisplay status counter service department calledAt servingAt createdAt")
       .populate("counter", "counterNumber name")
       .populate("service", "name averageServiceTime")
+      .populate("department", "name code")
       .sort({ tokenNumber: 1 });
 
     const servingTokens = tokens.filter((t) => t.status === "serving");
     const calledTokens = tokens.filter((t) => t.status === "called");
     const waitingTokens = tokens.filter((t) => t.status === "waiting");
+
+    // Most recently called or updated token
+    const latestCalled = calledTokens.length > 0
+      ? calledTokens.sort((a, b) => new Date(b.calledAt || 0) - new Date(a.calledAt || 0))[0]
+      : null;
+
+    // Attach active token to each counter for the multi-counter board
+    const countersWithTokens = allCounters.map((c) => {
+      const activeForCounter = tokens.find(
+        (t) => t.counter && t.counter._id.toString() === c._id.toString() && (t.status === "called" || t.status === "serving")
+      );
+
+      return {
+        _id: c._id,
+        counterNumber: c.counterNumber,
+        name: c.name,
+        department: c.department,
+        officer: c.officer,
+        status: c.status,
+        currentToken: activeForCounter
+          ? {
+              tokenDisplay: activeForCounter.tokenDisplay,
+              status: activeForCounter.status,
+              serviceName: activeForCounter.service?.name,
+              calledAt: activeForCounter.calledAt,
+              servingAt: activeForCounter.servingAt,
+            }
+          : null,
+      };
+    });
 
     const averageWait = waitingTokens.length > 0
       ? waitingTokens.length * (tokens[0]?.service?.averageServiceTime || 10)
@@ -341,29 +394,44 @@ const getPublicQueue = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      department: {
-        id: department._id,
-        name: department.name,
-        code: department.code,
-      },
+      department: targetDept
+        ? { id: targetDept._id, name: targetDept.name, code: targetDept.code }
+        : { id: "all", name: "All Taluk Counters", code: "ALL" },
+      latestCalled: latestCalled
+        ? {
+            tokenDisplay: latestCalled.tokenDisplay,
+            counterNumber: latestCalled.counter?.counterNumber || "—",
+            counterName: latestCalled.counter?.name || "Counter",
+            departmentName: latestCalled.department?.name,
+            serviceName: latestCalled.service?.name,
+            calledAt: latestCalled.calledAt,
+          }
+        : null,
       nowServing: servingTokens.map((t) => ({
         tokenDisplay: t.tokenDisplay,
         counterNumber: t.counter?.counterNumber || "—",
         counterName: t.counter?.name || "Counter",
+        departmentName: t.department?.name,
         serviceName: t.service?.name,
       })),
       nowCalled: calledTokens.map((t) => ({
         tokenDisplay: t.tokenDisplay,
         counterNumber: t.counter?.counterNumber || "—",
         counterName: t.counter?.name || "Counter",
+        departmentName: t.department?.name,
         serviceName: t.service?.name,
       })),
-      nextTokens: waitingTokens.slice(0, 10).map((t) => ({
+      nextTokens: waitingTokens.slice(0, 12).map((t) => ({
         tokenDisplay: t.tokenDisplay,
+        departmentName: t.department?.name,
+        departmentCode: t.department?.code,
         serviceName: t.service?.name,
+        tokenNumber: t.tokenNumber,
       })),
+      counters: countersWithTokens,
       waitingCount: waitingTokens.length,
       estimatedWaitMinutes: averageWait,
+      lastUpdated: new Date().toISOString(),
     });
   } catch (error) {
     console.error("Get Public Queue Error:", error);

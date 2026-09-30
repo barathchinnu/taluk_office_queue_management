@@ -14,6 +14,7 @@ const {
 const { protect, authorize } = require("../middleware/authMiddleware");
 
 // Public queue display (no login required)
+router.get("/public/queue", getPublicQueue);
 router.get("/public/queue/:departmentId", getPublicQueue);
 
 // Citizen active token
