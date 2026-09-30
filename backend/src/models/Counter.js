@@ -33,6 +33,11 @@ const counterSchema = new mongoose.Schema(
       default: "closed",
     },
 
+    isAvailable: {
+      type: Boolean,
+      default: true,
+    },
+
     isActive: {
       type: Boolean,
       default: true,

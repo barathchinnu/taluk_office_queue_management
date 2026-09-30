@@ -25,7 +25,19 @@ const appointmentSchema = new mongoose.Schema(
       required: true,
     },
 
+    appointmentTime: {
+      type: String,
+      default: "10:00 AM",
+      trim: true,
+    },
+
     purpose: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    notes: {
       type: String,
       trim: true,
       default: "",
@@ -35,6 +47,7 @@ const appointmentSchema = new mongoose.Schema(
       type: String,
       enum: [
         "booked",
+        "confirmed",
         "checked_in",
         "completed",
         "cancelled",
@@ -47,5 +60,8 @@ const appointmentSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+appointmentSchema.index({ citizen: 1, appointmentDate: 1 });
+appointmentSchema.index({ department: 1, appointmentDate: 1 });
 
 module.exports = mongoose.model("Appointment", appointmentSchema);

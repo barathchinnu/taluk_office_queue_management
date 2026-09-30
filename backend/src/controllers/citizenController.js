@@ -47,7 +47,7 @@ const getMyAppointments = async (req, res) => {
     const appointments = await Appointment.find({
       citizen: userId,
     })
-      .populate("department", "name")
+      .populate("department", "name code")
       .populate(
         "service",
         "name averageServiceTime"
@@ -96,7 +96,7 @@ const getMyToken = async (req, res) => {
     })
       .populate(
         "department",
-        "name"
+        "name code"
       )
       .populate(
         "service",
@@ -173,6 +173,8 @@ const getMyToken = async (req, res) => {
       success: true,
 
       token: {
+        _id: token._id,
+
         tokenNumber:
           token.tokenNumber,
 
@@ -190,6 +192,10 @@ const getMyToken = async (req, res) => {
 
         counter:
           token.counter,
+
+        calledAt: token.calledAt,
+        servingAt: token.servingAt,
+        createdAt: token.createdAt,
 
         peopleAhead,
 

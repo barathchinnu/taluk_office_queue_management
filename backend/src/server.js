@@ -5,6 +5,8 @@ const app = require("./app");
 const connectDB = require("./config/db");
 
 const server = http.createServer(app);
+const { initSocket } = require("./sockets/socket");
+initSocket(server);
 
 connectDB();
 

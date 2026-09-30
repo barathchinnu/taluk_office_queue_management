@@ -15,8 +15,7 @@ const tokenSchema = new mongoose.Schema(
     appointment: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Appointment",
-      required: true,
-      unique: true,
+      default: null,
     },
 
     citizen: {
@@ -75,10 +74,21 @@ const tokenSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    cancelledAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,
   }
 );
+
+// Indexes
+tokenSchema.index({ department: 1, queueDate: 1, status: 1 });
+tokenSchema.index({ department: 1, queueDate: 1, tokenNumber: 1 });
+tokenSchema.index({ citizen: 1, status: 1 });
+tokenSchema.index({ appointment: 1 }, { sparse: true, unique: true });
 
 module.exports = mongoose.model("Token", tokenSchema);
