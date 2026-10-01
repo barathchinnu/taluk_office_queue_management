@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,600;0,700;0,800;1,700&family=Share+Tech+Mono&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,34 +12,95 @@ h1, h2, h3, .font-heading {
   font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
 }
 
-@keyframes pulse-ring {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7);
-  }
-  70% {
-    transform: scale(1);
-    box-shadow: 0 0 0 10px rgba(79, 70, 229, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
-  }
+.font-led {
+  font-family: 'Share Tech Mono', monospace;
 }
 
-.pulse-active {
-  animation: pulse-ring 2s infinite cubic-bezier(0.45, 0, 0.55, 1);
+.font-chakra {
+  font-family: 'Chakra Petch', 'Outfit', sans-serif;
 }
 
-/* Glassmorphism effects */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+/* Realistic LED Digital Display Glows */
+.led-glow-amber {
+  text-shadow: 0 0 12px rgba(245, 158, 11, 0.8), 0 0 28px rgba(245, 158, 11, 0.45);
 }
 
-.glass-dark {
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(51, 65, 85, 0.8);
+.led-glow-emerald {
+  text-shadow: 0 0 12px rgba(16, 185, 129, 0.85), 0 0 28px rgba(16, 185, 129, 0.45);
+}
+
+.led-glow-cyan {
+  text-shadow: 0 0 12px rgba(6, 182, 212, 0.85), 0 0 28px rgba(6, 182, 212, 0.45);
+}
+
+.led-glow-red {
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.85), 0 0 28px rgba(239, 68, 68, 0.45);
+}
+
+.led-box-glow-amber {
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.25), inset 0 0 15px rgba(245, 158, 11, 0.1);
+}
+
+.led-box-glow-emerald {
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.25), inset 0 0 15px rgba(16, 185, 129, 0.1);
+}
+
+/* Authentic Commercial LED Signboard Scanlines / Dot Grid */
+.led-screen-pattern {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 4px 4px;
+}
+
+.led-subtle-scanline {
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.25) 50%
+  ),
+  linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.03),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 0, 255, 0.03)
+  );
+  background-size: 100% 3px, 6px 100%;
+}
+
+/* Realistic Hardware Commercial Display Bezel */
+.hardware-bezel {
+  border: 4px solid #1e293b;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.08), 0 15px 35px -5px rgba(0, 0, 0, 0.8);
+}
+
+@keyframes marquee-infinite {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee-smooth {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee-infinite 35s linear infinite;
+}
+
+.animate-marquee-smooth:hover {
+  animation-play-state: paused;
+}
+
+@keyframes sound-wave-bar {
+  0%, 100% { height: 4px; }
+  50% { height: 22px; }
+}
+
+.sound-bar-1 { animation: sound-wave-bar 0.7s ease-in-out infinite; }
+.sound-bar-2 { animation: sound-wave-bar 0.5s ease-in-out infinite 0.15s; }
+.sound-bar-3 { animation: sound-wave-bar 0.8s ease-in-out infinite 0.3s; }
+.sound-bar-4 { animation: sound-wave-bar 0.6s ease-in-out infinite 0.1s; }
+
+@keyframes blink-strobe {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.2; }
+}
+
+.blink-led {
+  animation: blink-strobe 1s infinite;
 }

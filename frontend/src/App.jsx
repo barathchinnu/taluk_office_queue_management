@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
+import { LanguageProvider } from "./context/LanguageContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -43,8 +44,9 @@ const Layout = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <Layout>
+      <LanguageProvider>
+        <BrowserRouter>
+          <Layout>
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<Home />} />
@@ -120,6 +122,7 @@ function App() {
           </Routes>
         </Layout>
       </BrowserRouter>
+      </LanguageProvider>
     </AuthProvider>
   );
 }

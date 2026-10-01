@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import {
   Building2,
   Lock,
@@ -24,6 +25,7 @@ const Register = () => {
   const [error, setError] = useState("");
 
   const { register } = useAuth();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -34,17 +36,21 @@ const Register = () => {
     e.preventDefault();
 
     if (!formData.fullName || !formData.email || !formData.phone || !formData.password) {
-      setError("All fields are required");
+      setError(language === "ta" ? "அனைத்து விவரங்களையும் நிரப்பவும்" : "All fields are required");
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+      setError(language === "ta" ? "கடவுச்சொற்கள் பொருந்தவில்லை" : "Passwords do not match");
       return;
     }
 
     if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters");
+      setError(
+        language === "ta"
+          ? "கடவுச்சொல் குறைந்தது 6 எழுத்துகள் கொண்டிருக்க வேண்டும்"
+          : "Password must be at least 6 characters"
+      );
       return;
     }
 
@@ -65,7 +71,10 @@ const Register = () => {
       }
     } catch (err) {
       console.error("Registration error:", err);
-      setError(err.response?.data?.message || "Registration failed. Please try again.");
+      setError(
+        err.response?.data?.message ||
+          (language === "ta" ? "பதிவு செய்ய முடியவில்லை. மீண்டும் முயற்சிக்கவும்." : "Registration failed. Please try again.")
+      );
     } finally {
       setLoading(false);
     }
@@ -79,10 +88,10 @@ const Register = () => {
             <Building2 className="w-7 h-7 text-amber-300" />
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 font-heading">
-            Citizen Registration
+            {t("auth", "registerTitle")}
           </h2>
           <p className="text-xs text-slate-500">
-            Create an official account to book taluk office tokens and track live queue status
+            {t("auth", "registerSubtitle")}
           </p>
         </div>
 
@@ -96,7 +105,7 @@ const Register = () => {
         <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Full Legal Name
+              {t("auth", "fullNameLabel")}
             </label>
             <div className="relative">
               <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -114,7 +123,7 @@ const Register = () => {
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Email Address
+              {t("auth", "emailLabel")}
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -132,7 +141,7 @@ const Register = () => {
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Mobile Number (10 Digits)
+              {t("auth", "phoneLabel")}
             </label>
             <div className="relative">
               <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -151,7 +160,7 @@ const Register = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Password
+                {t("auth", "passwordLabel")}
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -169,7 +178,7 @@ const Register = () => {
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Confirm Password
+                {t("auth", "confirmPasswordLabel")}
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -195,7 +204,7 @@ const Register = () => {
               <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             ) : (
               <>
-                <span>Create Citizen Account</span>
+                <span>{t("auth", "submitRegister")}</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -204,9 +213,9 @@ const Register = () => {
 
         <div className="text-center pt-2 border-t border-slate-100">
           <p className="text-xs text-slate-500">
-            Already registered?{" "}
+            {t("auth", "alreadyHaveAccount")}{" "}
             <Link to="/login" className="font-bold text-indigo-600 hover:text-indigo-800">
-              Sign In
+              {t("auth", "signInHere")}
             </Link>
           </p>
         </div>

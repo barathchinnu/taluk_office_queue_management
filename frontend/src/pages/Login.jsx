@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import {
   Building2,
   Lock,
@@ -20,6 +21,7 @@ const Login = () => {
   const [error, setError] = useState("");
 
   const { login } = useAuth();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -41,7 +43,11 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      setError("Please enter both email and password");
+      setError(
+        language === "ta"
+          ? "மின்னஞ்சல் மற்றும் கடவுச்சொல் இரண்டையும் உள்ளிடவும்"
+          : "Please enter both email and password"
+      );
       return;
     }
 
@@ -66,10 +72,21 @@ const Login = () => {
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError(err.response?.data?.message || "Invalid credentials. Please verify and try again.");
+      setError(
+        err.response?.data?.message ||
+          (language === "ta"
+            ? "உள்நுழைவு விவரங்கள் தவறானவை. சரிபார்த்து மீண்டும் முயற்சிக்கவும்."
+            : "Invalid credentials. Please verify and try again.")
+      );
     } finally {
       setLoading(false);
     }
+  };
+
+  const getRoleDisplayName = (role) => {
+    if (role === "admin") return t("auth", "roleAdmin");
+    if (role === "officer") return t("auth", "roleOfficer");
+    return t("auth", "roleCitizen");
   };
 
   return (
@@ -81,10 +98,10 @@ const Login = () => {
             <Building2 className="w-7 h-7 text-amber-300" />
           </div>
           <h2 className="text-2xl font-extrabold text-slate-900 font-heading">
-            Taluk Office Sign In
+            {t("auth", "loginTitle")}
           </h2>
           <p className="text-xs text-slate-500">
-            Secure single-window authentication for citizens & revenue officers
+            {t("auth", "loginSubtitle")}
           </p>
         </div>
 
@@ -100,7 +117,7 @@ const Login = () => {
             }`}
           >
             <User className="w-3.5 h-3.5" />
-            Citizen
+            {t("auth", "roleCitizen")}
           </button>
 
           <button
@@ -113,7 +130,7 @@ const Login = () => {
             }`}
           >
             <Briefcase className="w-3.5 h-3.5" />
-            Officer
+            {t("auth", "roleOfficer")}
           </button>
 
           <button
@@ -126,7 +143,7 @@ const Login = () => {
             }`}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            Admin
+            {t("auth", "roleAdmin")}
           </button>
         </div>
 
@@ -134,10 +151,12 @@ const Login = () => {
         {activeTab !== "citizen" && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 flex items-start gap-2">
             <span className="font-bold uppercase tracking-wider text-[10px] bg-amber-200 px-1.5 py-0.5 rounded text-amber-900">
-              Demo
+              {t("auth", "demoBadge")}
             </span>
             <span>
-              Pre-filled credentials for {activeTab === "admin" ? "Taluk Administrator" : "Revenue Officer (OFF002)"}
+              {language === "ta"
+                ? `${getRoleDisplayName(activeTab)} மாதிரி கணக்கு விவரங்கள் நிரப்பப்பட்டுள்ளன`
+                : `Pre-filled credentials for ${activeTab === "admin" ? "Taluk Administrator" : "Revenue Officer (OFF002)"}`}
             </span>
           </div>
         )}
@@ -154,7 +173,7 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Official Email Address
+              {t("auth", "emailLabel")}
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -171,7 +190,7 @@ const Login = () => {
 
           <div>
             <label className="block text-xs font-bold text-slate-700 mb-1">
-              Password
+              {t("auth", "passwordLabel")}
             </label>
             <div className="relative">
               <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
@@ -195,7 +214,11 @@ const Login = () => {
               <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
             ) : (
               <>
-                <span>Sign In as {activeTab.toUpperCase()}</span>
+                <span>
+                  {language === "ta"
+                    ? `${t("auth", "submitLogin")} (${getRoleDisplayName(activeTab)})`
+                    : `Sign In as ${activeTab.toUpperCase()}`}
+                </span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -205,9 +228,9 @@ const Login = () => {
         {/* Footer links */}
         <div className="text-center pt-2 border-t border-slate-100">
           <p className="text-xs text-slate-500">
-            Don't have a citizen account?{" "}
+            {t("auth", "dontHaveAccount")}{" "}
             <Link to="/register" className="font-bold text-indigo-600 hover:text-indigo-800">
-              Register here
+              {t("auth", "registerHere")}
             </Link>
           </p>
         </div>

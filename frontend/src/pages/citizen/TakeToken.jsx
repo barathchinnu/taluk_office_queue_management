@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { departmentService, serviceService, tokenService } from "../../services/api";
+import { useLanguage } from "../../context/LanguageContext";
 import StatusBadge from "../../components/StatusBadge";
 import {
   Building2,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 
 const TakeToken = () => {
+  const { language, t, tDeptName, tDeptDesc, tServiceName, tStatus } = useLanguage();
   const [departments, setDepartments] = useState([]);
   const [services, setServices] = useState([]);
   const [selectedDept, setSelectedDept] = useState(null);
@@ -100,16 +102,16 @@ const TakeToken = () => {
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
             <Link to="/citizen" className="hover:text-indigo-600 font-medium">
-              Citizen Desk
+              {t("takeToken", "breadcrumbDesk")}
             </Link>
             <span>/</span>
-            <span className="font-semibold text-slate-900">Take Token</span>
+            <span className="font-semibold text-slate-900">{t("takeToken", "breadcrumbTake")}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">
-            Generate Walk-in Token
+            {t("takeToken", "pageTitle")}
           </h1>
           <p className="text-xs text-slate-500">
-            Select the government department and required service to join today's digital queue
+            {t("takeToken", "pageSubtitle")}
           </p>
         </div>
 
@@ -118,7 +120,7 @@ const TakeToken = () => {
           className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Back to Desk</span>
+          <span>{t("takeToken", "backToDesk")}</span>
         </Link>
       </div>
 
@@ -138,34 +140,34 @@ const TakeToken = () => {
 
           <div className="space-y-1">
             <span className="text-xs uppercase tracking-widest font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-              Token Issued Successfully
+              {t("takeToken", "tokenIssuedSuccess")}
             </span>
             <h2 className="text-5xl sm:text-6xl font-black text-slate-900 font-heading tracking-tight pt-2">
               {generatedToken.tokenDisplay}
             </h2>
             <p className="text-xs text-slate-500 font-medium">
-              Token #{generatedToken.tokenNumber} • Queue Date: {new Date().toLocaleDateString("en-IN")}
+              Token #{generatedToken.tokenNumber} • {t("takeToken", "tokenQueueDate")}: {new Date().toLocaleDateString(language === "ta" ? "ta-IN" : "en-IN")}
             </p>
           </div>
 
           {/* Details summary */}
           <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200/80 max-w-md mx-auto text-left space-y-2.5 text-xs">
             <div className="flex justify-between">
-              <span className="text-slate-500">Department:</span>
-              <span className="font-bold text-slate-900">{generatedToken.department?.name}</span>
+              <span className="text-slate-500">{t("takeToken", "departmentLabel")}:</span>
+              <span className="font-bold text-slate-900">{tDeptName(generatedToken.department?.name)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Service Requested:</span>
-              <span className="font-bold text-slate-900">{generatedToken.service?.name}</span>
+              <span className="text-slate-500">{t("takeToken", "serviceLabel")}:</span>
+              <span className="font-bold text-slate-900">{tServiceName(generatedToken.service?.name)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Queue Status:</span>
+              <span className="text-slate-500">{t("takeToken", "queueStatusLabel")}:</span>
               <StatusBadge status={generatedToken.status} />
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-500">Avg. Service Time:</span>
+              <span className="text-slate-500">{t("takeToken", "avgServiceTimeLabel")}:</span>
               <span className="font-semibold text-slate-700">
-                {generatedToken.service?.averageServiceTime || 10} mins / token
+                {generatedToken.service?.averageServiceTime || 10} {language === "ta" ? "நிமிடம்" : "mins"} / token
               </span>
             </div>
           </div>
@@ -175,7 +177,7 @@ const TakeToken = () => {
               to="/citizen"
               className="px-6 py-3 rounded-xl bg-gov-700 hover:bg-gov-800 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2"
             >
-              <span>View Live Queue Position</span>
+              <span>{t("takeToken", "viewLivePosition")}</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
 
@@ -184,7 +186,7 @@ const TakeToken = () => {
               className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs flex items-center justify-center gap-2 transition-colors"
             >
               <Printer className="w-4 h-4" />
-              <span>Print Token Slip</span>
+              <span>{t("takeToken", "printTokenSlip")}</span>
             </button>
           </div>
         </div>
@@ -197,7 +199,7 @@ const TakeToken = () => {
               <span className="w-6 h-6 rounded-full bg-gov-700 text-white text-xs font-bold flex items-center justify-center">
                 1
               </span>
-              <h2 className="text-base font-bold text-slate-900">Select Taluk Department</h2>
+              <h2 className="text-base font-bold text-slate-900">{t("takeToken", "step1Title")}</h2>
             </div>
 
             {loadingDepts ? (
@@ -224,9 +226,9 @@ const TakeToken = () => {
                       <span className="text-[10px] font-bold text-indigo-600 bg-white px-2 py-0.5 rounded border border-slate-200">
                         {dept.code || "DEPT"}
                       </span>
-                      <h3 className="font-bold text-slate-900 text-sm mt-2">{dept.name}</h3>
+                      <h3 className="font-bold text-slate-900 text-sm mt-2">{tDeptName(dept.name)}</h3>
                       <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
-                        {dept.description}
+                        {tDeptDesc(dept.name, dept.description)}
                       </p>
                     </button>
                   );
@@ -243,7 +245,7 @@ const TakeToken = () => {
                   2
                 </span>
                 <h2 className="text-base font-bold text-slate-900">
-                  Select Service under {selectedDept.name}
+                  {t("takeToken", "step2Title")} {tDeptName(selectedDept.name)}
                 </h2>
               </div>
 
@@ -255,7 +257,7 @@ const TakeToken = () => {
                 </div>
               ) : services.length === 0 ? (
                 <div className="text-center py-6 text-xs text-slate-400">
-                  No active services found under this department.
+                  {language === "ta" ? "சேவைகள் எதுவும் இல்லை." : "No active services found under this department."}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -273,7 +275,7 @@ const TakeToken = () => {
                         }`}
                       >
                         <div className="flex justify-between items-start gap-2">
-                          <h4 className="font-bold text-slate-900 text-sm">{svc.name}</h4>
+                          <h4 className="font-bold text-slate-900 text-sm">{tServiceName(svc.name)}</h4>
                           <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100/60 px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {svc.averageServiceTime || 10}m
@@ -295,13 +297,13 @@ const TakeToken = () => {
             <div className="bg-slate-900 rounded-3xl p-6 sm:p-8 text-white flex flex-col sm:flex-row items-center justify-between gap-6 shadow-lg">
               <div className="space-y-1 text-center sm:text-left">
                 <span className="text-[11px] uppercase tracking-wider font-bold text-amber-400">
-                  Ready to Issue Token
+                  {t("takeToken", "step3Ready")}
                 </span>
                 <h3 className="text-xl font-bold">
-                  {selectedService.name} ({selectedDept.name})
+                  {tServiceName(selectedService.name)} ({tDeptName(selectedDept.name)})
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Estimated average service duration: {selectedService.averageServiceTime || 10} minutes
+                  {t("takeToken", "estTime")}: {selectedService.averageServiceTime || 10} {language === "ta" ? "நிமிடங்கள்" : "minutes"}
                 </p>
               </div>
 
@@ -315,7 +317,7 @@ const TakeToken = () => {
                 ) : (
                   <>
                     <Ticket className="w-4 h-4" />
-                    <span>Issue Walk-in Token</span>
+                    <span>{t("takeToken", "issueBtn")}</span>
                   </>
                 )}
               </button>

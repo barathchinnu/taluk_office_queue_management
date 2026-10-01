@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { adminService, departmentService } from "../../services/api";
 import StatusBadge from "../../components/StatusBadge";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   ShieldCheck,
   Users,
@@ -23,6 +24,7 @@ import {
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview"); // overview, depts, services, officers, counters, appointments
   const [statsData, setStatsData] = useState(null);
+  const { t, tDeptName, tServiceName, language } = useLanguage();
   const [departments, setDepartments] = useState([]);
   const [services, setServices] = useState([]);
   const [officers, setOfficers] = useState([]);
@@ -271,10 +273,12 @@ const AdminDashboard = () => {
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">
-              Taluk Administration Console
+              {language === "ta" ? "வட்டாட்சியர் நிர்வாக பலகை" : "Taluk Administration Console"}
             </h1>
             <p className="text-xs text-slate-500">
-              Complete management of departments, services, revenue officers, counters & queues
+              {language === "ta"
+                ? "துறைகள், சேவைகள், அலுவலர்கள், கவுண்டர்கள் மற்றும் வரிசைகளின் முழுமையான மேலாண்மை"
+                : "Complete management of departments, services, revenue officers, counters & queues"}
             </p>
           </div>
         </div>
@@ -288,7 +292,7 @@ const AdminDashboard = () => {
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-xs"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-rose-600" : ""}`} />
-          <span>Refresh</span>
+          <span>{language === "ta" ? "புதுப்பிக்க" : "Refresh"}</span>
         </button>
       </div>
 
@@ -310,7 +314,7 @@ const AdminDashboard = () => {
             <span>{message.text}</span>
           </div>
           <button onClick={() => setMessage(null)} className="text-xs font-bold hover:underline">
-            Dismiss
+            {t("citizen", "dismiss")}
           </button>
         </div>
       )}
@@ -318,12 +322,36 @@ const AdminDashboard = () => {
       {/* Tabs navigation */}
       <div className="flex flex-wrap gap-1 bg-slate-100 p-1.5 rounded-2xl border border-slate-200/80">
         {[
-          { id: "overview", label: "Overview & Analytics", icon: Layers },
-          { id: "depts", label: "Departments", icon: Building2 },
-          { id: "services", label: "Services", icon: Briefcase },
-          { id: "officers", label: "Officers", icon: Users },
-          { id: "counters", label: "Counters", icon: Monitor },
-          { id: "appointments", label: "Appointments", icon: Clock },
+          {
+            id: "overview",
+            label: language === "ta" ? "கண்ணோட்டம் & புள்ளிவிவரங்கள்" : "Overview & Analytics",
+            icon: Layers,
+          },
+          {
+            id: "depts",
+            label: language === "ta" ? "துறைகள்" : "Departments",
+            icon: Building2,
+          },
+          {
+            id: "services",
+            label: language === "ta" ? "சேவைகள்" : "Services",
+            icon: Briefcase,
+          },
+          {
+            id: "officers",
+            label: language === "ta" ? "அலுவலர்கள்" : "Officers",
+            icon: Users,
+          },
+          {
+            id: "counters",
+            label: language === "ta" ? "கவுண்டர்கள்" : "Counters",
+            icon: Monitor,
+          },
+          {
+            id: "appointments",
+            label: language === "ta" ? "முன்பதிவுகள்" : "Appointments",
+            icon: Clock,
+          },
         ].map((tab) => {
           const Icon = tab.icon;
           const isSelected = activeTab === tab.id;
@@ -350,27 +378,39 @@ const AdminDashboard = () => {
           {/* Top 6 KPI Cards (Phase 23 requirements) */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Citizens</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {language === "ta" ? "குடிமக்கள்" : "Citizens"}
+              </span>
               <div className="text-2xl font-black text-slate-900 font-heading">{stats?.totalCitizens ?? 0}</div>
             </div>
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Officers</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {language === "ta" ? "அலுவலர்கள்" : "Officers"}
+              </span>
               <div className="text-2xl font-black text-purple-700 font-heading">{stats?.totalOfficers ?? 0}</div>
             </div>
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Departments</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {language === "ta" ? "துறைகள்" : "Departments"}
+              </span>
               <div className="text-2xl font-black text-slate-900 font-heading">{stats?.totalDepartments ?? 0}</div>
             </div>
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Services</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {language === "ta" ? "சேவைகள்" : "Services"}
+              </span>
               <div className="text-2xl font-black text-slate-900 font-heading">{stats?.totalServices ?? 0}</div>
             </div>
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Counters</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {language === "ta" ? "கவுண்டர்கள்" : "Counters"}
+              </span>
               <div className="text-2xl font-black text-slate-900 font-heading">{stats?.totalCounters ?? 0}</div>
             </div>
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-1">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Today Tokens</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                {language === "ta" ? "இன்றைய டோக்கன்கள்" : "Today Tokens"}
+              </span>
               <div className="text-2xl font-black text-amber-600 font-heading">{stats?.todayTokens ?? 0}</div>
             </div>
           </div>
@@ -378,51 +418,67 @@ const AdminDashboard = () => {
           {/* Today's Queue Status Breakdown */}
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="bg-amber-50/80 p-5 rounded-2xl border border-amber-200/80 text-amber-900 space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">Waiting Tokens</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
+                {language === "ta" ? "காத்திருக்கும் டோக்கன்கள்" : "Waiting Tokens"}
+              </span>
               <div className="text-3xl font-black font-heading">{stats?.waitingTokens ?? 0}</div>
-              <p className="text-[11px] text-amber-700">In waiting hall queue</p>
+              <p className="text-[11px] text-amber-700">
+                {language === "ta" ? "காத்திருப்பு அறை வரிசையில்" : "In waiting hall queue"}
+              </p>
             </div>
 
             <div className="bg-purple-50/80 p-5 rounded-2xl border border-purple-200/80 text-purple-900 space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700">Currently Serving</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700">
+                {language === "ta" ? "தற்போது சேவையில்" : "Currently Serving"}
+              </span>
               <div className="text-3xl font-black font-heading">{stats?.servingTokens ?? 0}</div>
-              <p className="text-[11px] text-purple-700">Active at counters</p>
+              <p className="text-[11px] text-purple-700">
+                {language === "ta" ? "கவுண்டர்களில் சேவையில்" : "Active at counters"}
+              </p>
             </div>
 
             <div className="bg-emerald-50/80 p-5 rounded-2xl border border-emerald-200/80 text-emerald-900 space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Completed Today</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
+                {language === "ta" ? "இன்று முடிந்தது" : "Completed Today"}
+              </span>
               <div className="text-3xl font-black font-heading">{stats?.completedTokens ?? 0}</div>
-              <p className="text-[11px] text-emerald-700">Resolved services</p>
+              <p className="text-[11px] text-emerald-700">
+                {language === "ta" ? "முடிவடைந்த சேவைகள்" : "Resolved services"}
+              </p>
             </div>
 
             <div className="bg-blue-50/80 p-5 rounded-2xl border border-blue-200/80 text-blue-900 space-y-1">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700">Today Appointments</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700">
+                {language === "ta" ? "இன்றைய முன்பதிவுகள்" : "Today Appointments"}
+              </span>
               <div className="text-3xl font-black font-heading">{stats?.todayAppointments ?? 0}</div>
-              <p className="text-[11px] text-blue-700">Scheduled visits</p>
+              <p className="text-[11px] text-blue-700">
+                {language === "ta" ? "திட்டமிடப்பட்ட வருகைகள்" : "Scheduled visits"}
+              </p>
             </div>
           </div>
 
           {/* Department breakdown table */}
           <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-4">
             <h2 className="text-base font-bold text-slate-900 font-heading">
-              Department-wise Queue Live Metrics
+              {language === "ta" ? "துறைவாரியான நேரலை வரிசை நிலவரம்" : "Department-wise Queue Live Metrics"}
             </h2>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
-                    <th className="py-3 px-3">Department</th>
-                    <th className="py-3 px-3">Code</th>
-                    <th className="py-3 px-3">Waiting</th>
-                    <th className="py-3 px-3">Serving</th>
-                    <th className="py-3 px-3">Completed</th>
-                    <th className="py-3 px-3">Total Processed</th>
+                    <th className="py-3 px-3">{language === "ta" ? "துறை" : "Department"}</th>
+                    <th className="py-3 px-3">{language === "ta" ? "குறியீடு" : "Code"}</th>
+                    <th className="py-3 px-3">{language === "ta" ? "காத்திருப்போர்" : "Waiting"}</th>
+                    <th className="py-3 px-3">{language === "ta" ? "சேவையில்" : "Serving"}</th>
+                    <th className="py-3 px-3">{language === "ta" ? "முடிந்தது" : "Completed"}</th>
+                    <th className="py-3 px-3">{language === "ta" ? "மொத்தம்" : "Total Processed"}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {deptStats.map((d) => (
                     <tr key={d.id} className="hover:bg-slate-50/60">
-                      <td className="py-3.5 px-3 font-bold text-slate-900">{d.name}</td>
+                      <td className="py-3.5 px-3 font-bold text-slate-900">{tDeptName(d.name)}</td>
                       <td className="py-3.5 px-3 font-semibold text-indigo-600">{d.code}</td>
                       <td className="py-3.5 px-3 font-bold text-amber-600">{d.waiting}</td>
                       <td className="py-3.5 px-3 font-bold text-purple-600">{d.serving}</td>

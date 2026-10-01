@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { officerService, tokenService } from "../../services/api";
 import { getSocket, joinDepartment, leaveDepartment } from "../../services/socket";
 import StatusBadge from "../../components/StatusBadge";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Briefcase,
   User,
@@ -27,6 +28,7 @@ const OfficerDashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const { t, tDeptName, tServiceName, language } = useLanguage();
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -92,19 +94,24 @@ const OfficerDashboard = () => {
       if (res.success && res.token) {
         setMessage({
           type: "success",
-          text: `Token ${res.token.tokenDisplay} called successfully to your counter!`,
+          text:
+            language === "ta"
+              ? `டோக்கன் ${res.token.tokenDisplay} உங்கள் கவுண்டருக்கு வெற்றிகரமாக அழைக்கப்பட்டது!`
+              : `Token ${res.token.tokenDisplay} called successfully to your counter!`,
         });
         fetchDashboard();
       } else {
         setMessage({
           type: "info",
-          text: res.message || "No waiting tokens in your department right now.",
+          text: res.message || t("officer", "noWaitingInDept"),
         });
       }
     } catch (err) {
       setMessage({
         type: "error",
-        text: err.response?.data?.message || "Failed to call next token",
+        text:
+          err.response?.data?.message ||
+          (language === "ta" ? "அடுத்த டோக்கனை அழைக்க முடியவில்லை" : "Failed to call next token"),
       });
     } finally {
       setActionLoading(false);
@@ -119,14 +126,19 @@ const OfficerDashboard = () => {
       if (res.success) {
         setMessage({
           type: "success",
-          text: `Service started for token ${res.token.tokenDisplay}.`,
+          text:
+            language === "ta"
+              ? `டோக்கன் ${res.token.tokenDisplay}-க்கு சேவை தொடங்கப்பட்டது.`
+              : `Service started for token ${res.token.tokenDisplay}.`,
         });
         fetchDashboard();
       }
     } catch (err) {
       setMessage({
         type: "error",
-        text: err.response?.data?.message || "Failed to start service",
+        text:
+          err.response?.data?.message ||
+          (language === "ta" ? "சேவையைத் தொடங்க முடியவில்லை" : "Failed to start service"),
       });
     } finally {
       setActionLoading(false);
@@ -141,14 +153,19 @@ const OfficerDashboard = () => {
       if (res.success) {
         setMessage({
           type: "success",
-          text: `Service completed successfully! Counter is ready for the next citizen.`,
+          text:
+            language === "ta"
+              ? "சேவை வெற்றிகரமாக முடிக்கப்பட்டது! கவுண்டர் அடுத்த நபருக்கு தயாராக உள்ளது."
+              : `Service completed successfully! Counter is ready for the next citizen.`,
         });
         fetchDashboard();
       }
     } catch (err) {
       setMessage({
         type: "error",
-        text: err.response?.data?.message || "Failed to complete service",
+        text:
+          err.response?.data?.message ||
+          (language === "ta" ? "சேவையை முடிக்க முடியவில்லை" : "Failed to complete service"),
       });
     } finally {
       setActionLoading(false);
@@ -156,7 +173,13 @@ const OfficerDashboard = () => {
   };
 
   const handleSkipToken = async (tokenId) => {
-    if (!window.confirm("Are you sure you want to mark this citizen as skipped / no-show?")) {
+    if (
+      !window.confirm(
+        language === "ta"
+          ? "இந்த குடிமகன் வரவில்லை என குறிக்க நிச்சயமாக விரும்புகிறீர்களா?"
+          : "Are you sure you want to mark this citizen as skipped / no-show?"
+      )
+    ) {
       return;
     }
     try {
@@ -166,14 +189,19 @@ const OfficerDashboard = () => {
       if (res.success) {
         setMessage({
           type: "info",
-          text: `Token marked as skipped. You can now call the next citizen in line.`,
+          text:
+            language === "ta"
+              ? "டோக்கன் தவிர்க்கப்பட்டது. இப்போது அடுத்த நபரை அழைக்கலாம்."
+              : `Token marked as skipped. You can now call the next citizen in line.`,
         });
         fetchDashboard();
       }
     } catch (err) {
       setMessage({
         type: "error",
-        text: err.response?.data?.message || "Failed to skip token",
+        text:
+          err.response?.data?.message ||
+          (language === "ta" ? "டோக்கனை தவிர்க்க முடியவில்லை" : "Failed to skip token"),
       });
     } finally {
       setActionLoading(false);
@@ -199,7 +227,9 @@ const OfficerDashboard = () => {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
         <div className="w-10 h-10 border-4 border-purple-700 border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-3 text-sm text-slate-500 font-medium">Loading officer desk...</p>
+        <p className="mt-3 text-sm text-slate-500 font-medium">
+          {language === "ta" ? "அலுவலர் மேஜை ஏற்றப்படுகிறது..." : "Loading officer desk..."}
+        </p>
       </div>
     );
   }
@@ -243,10 +273,19 @@ const OfficerDashboard = () => {
             </h1>
             <p className="text-xs text-slate-500 flex items-center gap-1.5">
               <Building2 className="w-3.5 h-3.5 text-slate-400" />
-              <span>Department: <strong>{officer?.department?.name}</strong></span>
+              <span>
+                {language === "ta" ? "துறை" : "Department"}: <strong>{tDeptName(officer?.department?.name)}</strong>
+              </span>
               <span>•</span>
               <span>
-                Desk: <strong>{counter ? `${counter.name} (Counter #${counter.counterNumber})` : "No Counter Assigned"}</strong>
+                {language === "ta" ? "மேஜை" : "Desk"}:{" "}
+                <strong>
+                  {counter
+                    ? `${counter.name} (${language === "ta" ? "கவுண்டர்" : "Counter"} #${counter.counterNumber})`
+                    : language === "ta"
+                    ? "கவுண்டர் ஒதுக்கப்படவில்லை"
+                    : "No Counter Assigned"}
+                </strong>
               </span>
             </p>
           </div>
@@ -258,7 +297,7 @@ const OfficerDashboard = () => {
             onClick={fetchDashboard}
             disabled={refreshing}
             className="p-2.5 text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
-            title="Refresh"
+            title={language === "ta" ? "புதுப்பிக்க" : "Refresh"}
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin text-purple-600" : ""}`} />
           </button>
@@ -273,7 +312,9 @@ const OfficerDashboard = () => {
             }`}
           >
             <Power className="w-4 h-4" />
-            <span>{isAvailable ? "Status: AVAILABLE" : "Status: UNAVAILABLE"}</span>
+            <span>
+              {isAvailable ? t("officer", "availableStatus") : t("officer", "unavailableStatus")}
+            </span>
           </button>
         </div>
       </div>
@@ -282,9 +323,7 @@ const OfficerDashboard = () => {
       {!hasCounter && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800 flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-          <div>
-            <strong className="font-bold">No active counter currently assigned to you!</strong> You cannot call tokens until an Administrator assigns your profile to a Counter.
-          </div>
+          <div>{t("officer", "noCounterWarning")}</div>
         </div>
       )}
 
@@ -308,7 +347,7 @@ const OfficerDashboard = () => {
             <span>{message.text}</span>
           </div>
           <button onClick={() => setMessage(null)} className="text-xs font-bold hover:underline">
-            Dismiss
+            {t("citizen", "dismiss")}
           </button>
         </div>
       )}
@@ -317,29 +356,39 @@ const OfficerDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
           <span className="text-[11px] uppercase tracking-wider font-bold text-slate-400">
-            Waiting in Department
+            {t("officer", "waitingInDept")}
           </span>
           <div className="text-4xl font-black text-amber-600 font-heading">{waitingCount}</div>
-          <p className="text-xs text-slate-500">Citizens waiting for service</p>
+          <p className="text-xs text-slate-500">
+            {language === "ta" ? "சேவைக்காக காத்திருக்கும் நபர்கள்" : "Citizens waiting for service"}
+          </p>
         </div>
 
         <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
           <span className="text-[11px] uppercase tracking-wider font-bold text-slate-400">
-            Completed Today
+            {t("officer", "completedToday")}
           </span>
           <div className="text-4xl font-black text-emerald-600 font-heading">{completedCount}</div>
-          <p className="text-xs text-slate-500">Tokens finished successfully</p>
+          <p className="text-xs text-slate-500">
+            {language === "ta" ? "வெற்றிகரமாக முடிக்கப்பட்ட டோக்கன்கள்" : "Tokens finished successfully"}
+          </p>
         </div>
 
         <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-xs space-y-1">
           <span className="text-[11px] uppercase tracking-wider font-bold text-slate-400">
-            Counter Assignment
+            {t("officer", "counterAssignment")}
           </span>
           <div className="text-2xl font-black text-slate-900 font-heading">
-            {counter ? `Counter #${counter.counterNumber}` : "Unassigned"}
+            {counter
+              ? `${language === "ta" ? "கவுண்டர்" : "Counter"} #${counter.counterNumber}`
+              : t("officer", "unassignedCounter")}
           </div>
           <p className="text-xs text-slate-500">
-            {counter?.status ? `Counter Status: ${counter.status}` : "Contact administrator"}
+            {counter?.status
+              ? `${language === "ta" ? "கவுண்டர் நிலை" : "Counter Status"}: ${counter.status}`
+              : language === "ta"
+              ? "நிர்வாகியை அணுகவும்"
+              : "Contact administrator"}
           </p>
         </div>
       </div>
@@ -348,9 +397,9 @@ const OfficerDashboard = () => {
       <div className="bg-white rounded-3xl border-2 border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-4">
           <h2 className="text-xl font-bold text-slate-900 font-heading">
-            Current Active Token at Desk
+            {t("officer", "currentActiveTokenTitle")}
           </h2>
-          <span className="text-xs text-slate-500">Officer Action Controls</span>
+          <span className="text-xs text-slate-500">{t("officer", "officerActionControls")}</span>
         </div>
 
         {currentToken ? (
@@ -359,7 +408,7 @@ const OfficerDashboard = () => {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
-                    Token #{currentToken.tokenNumber}
+                    {language === "ta" ? "டோக்கன் எண்" : "Token"} #{currentToken.tokenNumber}
                   </span>
                   <StatusBadge status={currentToken.status} />
                 </div>
@@ -370,10 +419,15 @@ const OfficerDashboard = () => {
 
                 <div className="text-xs text-slate-600 space-y-1">
                   <p>
-                    Citizen: <strong className="text-slate-900">{currentToken.citizen?.fullName}</strong> (Phone: {currentToken.citizen?.phone})
+                    {language === "ta" ? "குடிமகன்" : "Citizen"}:{" "}
+                    <strong className="text-slate-900">{currentToken.citizen?.fullName}</strong> (
+                    {language === "ta" ? "கைபேசி" : "Phone"}: {currentToken.citizen?.phone})
                   </p>
                   <p>
-                    Service: <strong>{currentToken.service?.name}</strong> (~{currentToken.service?.averageServiceTime || 10} mins)
+                    {language === "ta" ? "சேவை" : "Service"}:{" "}
+                    <strong>{tServiceName(currentToken.service?.name)}</strong> (~
+                    {currentToken.service?.averageServiceTime || 10}{" "}
+                    {language === "ta" ? "நிமிடங்கள்" : "mins"})
                   </p>
                 </div>
               </div>
@@ -382,13 +436,21 @@ const OfficerDashboard = () => {
               <div className="bg-white p-4 rounded-xl border border-slate-200 text-center min-w-[160px]">
                 <Clock className="w-5 h-5 text-indigo-600 mx-auto mb-1" />
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  {currentToken.status === "called" ? "Called At" : "Serving Since"}
+                  {currentToken.status === "called"
+                    ? language === "ta"
+                      ? "அழைக்கப்பட்ட நேரம்"
+                      : "Called At"
+                    : language === "ta"
+                    ? "சேவை தொடக்கம்"
+                    : "Serving Since"}
                 </span>
                 <div className="text-sm font-bold text-slate-800">
                   {currentToken.servingAt
-                    ? new Date(currentToken.servingAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    ? new Date(currentToken.servingAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
                     : currentToken.calledAt
-                    ? new Date(currentToken.calledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    ? new Date(currentToken.calledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                    : language === "ta"
+                    ? "சற்றுமுன்"
                     : "Just now"}
                 </div>
               </div>
@@ -403,7 +465,7 @@ const OfficerDashboard = () => {
                 className="py-3 px-4 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs flex items-center justify-center gap-2 transition-all"
               >
                 <Play className="w-4 h-4 fill-white" />
-                <span>START SERVICE</span>
+                <span>{t("officer", "startServiceBtn")}</span>
               </button>
 
               {/* Button 2: Complete Service */}
@@ -413,7 +475,7 @@ const OfficerDashboard = () => {
                 className="py-3 px-4 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs flex items-center justify-center gap-2 transition-all"
               >
                 <Check className="w-4 h-4" />
-                <span>COMPLETE SERVICE</span>
+                <span>{t("officer", "completeServiceBtn")}</span>
               </button>
 
               {/* Button 3: Skip / No-show */}
@@ -423,7 +485,7 @@ const OfficerDashboard = () => {
                 className="py-3 px-4 rounded-xl font-bold text-xs text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs flex items-center justify-center gap-2 transition-all"
               >
                 <SkipForward className="w-4 h-4" />
-                <span>SKIP TOKEN</span>
+                <span>{t("officer", "skipBtn")}</span>
               </button>
             </div>
           </div>
@@ -434,11 +496,13 @@ const OfficerDashboard = () => {
               <PhoneCall className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Desk Ready For Next Citizen</h3>
+              <h3 className="text-lg font-bold text-slate-900">{t("officer", "deskReadyTitle")}</h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
                 {waitingCount > 0
-                  ? `There are ${waitingCount} citizens waiting in line. Click below to announce the next token.`
-                  : "No waiting tokens in your department right now."}
+                  ? language === "ta"
+                    ? `வரிசையில் ${waitingCount} குடிமக்கள் காத்திருக்கின்றனர். அடுத்த டோக்கனை அழைக்க கீழே கிளிக் செய்யவும்.`
+                    : `There are ${waitingCount} citizens waiting in line. Click below to announce the next token.`
+                  : t("officer", "noWaitingInDept")}
               </p>
             </div>
 
@@ -453,7 +517,11 @@ const OfficerDashboard = () => {
                 ) : (
                   <>
                     <PhoneCall className="w-4 h-4" />
-                    <span>CALL NEXT TOKEN ({waitingCount} WAITING)</span>
+                    <span>
+                      {language === "ta"
+                        ? `அடுத்த டோக்கனை அழைக்கவும் (${waitingCount} பேர் காத்திருப்பில்)`
+                        : `CALL NEXT TOKEN (${waitingCount} WAITING)`}
+                    </span>
                   </>
                 )}
               </button>
@@ -466,52 +534,52 @@ const OfficerDashboard = () => {
       <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-4">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-bold text-slate-900 font-heading">
-            Department Waiting Queue ({officer?.department?.name})
+            {t("officer", "deptWaitingQueue")} ({tDeptName(officer?.department?.name)})
           </h3>
           <span className="text-xs text-slate-500 font-medium">
-            Total Active: {queue.length}
+            {language === "ta" ? "மொத்த செயலில் உள்ளவை" : "Total Active"}: {queue.length}
           </span>
         </div>
 
         {queue.length === 0 ? (
           <div className="text-center py-8 text-xs text-slate-400">
-            Queue is empty. No active tokens in department.
+            {t("officer", "queueEmptyDept")}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
-                  <th className="py-3 px-3">Token #</th>
-                  <th className="py-3 px-3">Citizen</th>
-                  <th className="py-3 px-3">Phone</th>
-                  <th className="py-3 px-3">Service</th>
-                  <th className="py-3 px-3">Counter</th>
-                  <th className="py-3 px-3">Status</th>
+                  <th className="py-3 px-3">{language === "ta" ? "டோக்கன் #" : "Token #"}</th>
+                  <th className="py-3 px-3">{language === "ta" ? "குடிமகன்" : "Citizen"}</th>
+                  <th className="py-3 px-3">{language === "ta" ? "கைபேசி" : "Phone"}</th>
+                  <th className="py-3 px-3">{language === "ta" ? "சேவை" : "Service"}</th>
+                  <th className="py-3 px-3">{language === "ta" ? "கவுண்டர்" : "Counter"}</th>
+                  <th className="py-3 px-3">{language === "ta" ? "நிலை" : "Status"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {queue.map((t) => (
-                  <tr key={t._id} className="hover:bg-slate-50/60 transition-colors">
+                {queue.map((queueItem) => (
+                  <tr key={queueItem._id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="py-3.5 px-3 font-extrabold text-sm text-slate-900">
-                      {t.tokenDisplay}
+                      {queueItem.tokenDisplay}
                     </td>
                     <td className="py-3.5 px-3 font-medium text-slate-800">
-                      {t.citizen?.fullName}
+                      {queueItem.citizen?.fullName}
                     </td>
-                    <td className="py-3.5 px-3 text-slate-500">{t.citizen?.phone}</td>
-                    <td className="py-3.5 px-3 text-slate-700">{t.service?.name}</td>
+                    <td className="py-3.5 px-3 text-slate-500">{queueItem.citizen?.phone}</td>
+                    <td className="py-3.5 px-3 text-slate-700">{tServiceName(queueItem.service?.name)}</td>
                     <td className="py-3.5 px-3 text-slate-700">
-                      {t.counter ? (
+                      {queueItem.counter ? (
                         <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
-                          {t.counter.name}
+                          {queueItem.counter.name}
                         </span>
                       ) : (
                         "—"
                       )}
                     </td>
                     <td className="py-3.5 px-3">
-                      <StatusBadge status={t.status} />
+                      <StatusBadge status={queueItem.status} />
                     </td>
                   </tr>
                 ))}

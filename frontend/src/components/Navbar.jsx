@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
+import LanguageSwitcher from "./LanguageSwitcher";
 import {
   Building2,
   Ticket,
@@ -18,6 +20,7 @@ import {
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -48,14 +51,14 @@ const Navbar = () => {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs uppercase tracking-widest font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                  Taluk Office
+                  {t("nav", "talukOffice")}
                 </span>
                 <span className="text-xs font-semibold text-slate-500 hidden sm:inline">
-                  Queue Management
+                  {t("nav", "queueManagement")}
                 </span>
               </div>
               <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug">
-                Smart e-Seva Portal
+                {t("nav", "portalName")}
               </h1>
             </div>
           </Link>
@@ -72,7 +75,7 @@ const Navbar = () => {
               }`}
             >
               <Monitor className="w-4 h-4 text-indigo-600" />
-              Public Screen
+              {t("nav", "publicScreen")}
             </Link>
 
             {/* Citizen Links */}
@@ -87,7 +90,7 @@ const Navbar = () => {
                   }`}
                 >
                   <Ticket className="w-4 h-4 text-gov-600" />
-                  My Token
+                  {t("nav", "myToken")}
                 </Link>
                 <Link
                   to="/citizen/take-token"
@@ -98,7 +101,7 @@ const Navbar = () => {
                   }`}
                 >
                   <Ticket className="w-4 h-4 text-amber-600" />
-                  Take Token
+                  {t("nav", "takeToken")}
                 </Link>
                 <Link
                   to="/citizen/appointments"
@@ -109,7 +112,7 @@ const Navbar = () => {
                   }`}
                 >
                   <Calendar className="w-4 h-4 text-emerald-600" />
-                  Appointments
+                  {t("nav", "appointments")}
                 </Link>
                 <Link
                   to="/citizen/queue"
@@ -120,7 +123,7 @@ const Navbar = () => {
                   }`}
                 >
                   <Clock className="w-4 h-4 text-blue-600" />
-                  Live Queue
+                  {t("nav", "liveQueue")}
                 </Link>
               </>
             )}
@@ -137,7 +140,7 @@ const Navbar = () => {
                   }`}
                 >
                   <Briefcase className="w-4 h-4 text-purple-600" />
-                  Officer Desk
+                  {t("nav", "officerDesk")}
                 </Link>
                 <Link
                   to="/officer/queue"
@@ -148,7 +151,7 @@ const Navbar = () => {
                   }`}
                 >
                   <Users className="w-4 h-4 text-purple-600" />
-                  Department Queue
+                  {t("nav", "deptQueue")}
                 </Link>
               </>
             )}
@@ -164,13 +167,16 @@ const Navbar = () => {
                 }`}
               >
                 <ShieldCheck className="w-4 h-4 text-rose-600" />
-                Admin Console
+                {t("nav", "adminConsole")}
               </Link>
             )}
           </nav>
 
-          {/* Right Action: Auth Buttons */}
+          {/* Right Action: Language Switcher & Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
+            {/* Global Language Switcher */}
+            <LanguageSwitcher />
+
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
@@ -182,7 +188,13 @@ const Navbar = () => {
                       {user?.fullName}
                     </p>
                     <p className="text-[11px] font-medium text-slate-500 capitalize">
-                      {user?.role}
+                      {language === "ta"
+                        ? user?.role === "citizen"
+                          ? "குடிமகன்"
+                          : user?.role === "officer"
+                          ? "அலுவலர்"
+                          : "நிர்வாகி"
+                        : user?.role}
                     </p>
                   </div>
                 </div>
@@ -192,7 +204,7 @@ const Navbar = () => {
                   className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors border border-rose-200"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  Logout
+                  {t("nav", "logout")}
                 </button>
               </div>
             ) : (
@@ -201,13 +213,13 @@ const Navbar = () => {
                   to="/login"
                   className="px-4 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  Login
+                  {t("nav", "login")}
                 </Link>
                 <Link
                   to="/register"
                   className="px-4 py-2 text-sm font-semibold text-white bg-gov-700 hover:bg-gov-800 rounded-lg shadow-xs hover:shadow transition-all"
                 >
-                  Citizen Sign Up
+                  {t("nav", "signUp")}
                 </Link>
               </div>
             )}
@@ -215,6 +227,7 @@ const Navbar = () => {
 
           {/* Mobile menu toggle */}
           <div className="flex md:hidden items-center gap-2">
+            <LanguageSwitcher variant="compact" />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none"
@@ -228,12 +241,16 @@ const Navbar = () => {
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-2">
+          <div className="pb-2 mb-2 border-b border-slate-100">
+            <LanguageSwitcher className="w-full justify-center" />
+          </div>
+
           <Link
             to="/display"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100"
           >
-            Public Screen
+            {t("nav", "publicScreen")}
           </Link>
 
           {isAuthenticated && user?.role === "citizen" && (
@@ -243,21 +260,28 @@ const Navbar = () => {
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
-                My Token & Queue
+                {t("nav", "myToken")}
               </Link>
               <Link
                 to="/citizen/take-token"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
-                Take Walk-in Token
+                {t("nav", "takeToken")}
               </Link>
               <Link
                 to="/citizen/appointments"
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
-                My Appointments
+                {t("nav", "appointments")}
+              </Link>
+              <Link
+                to="/citizen/queue"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                {t("nav", "liveQueue")}
               </Link>
             </>
           )}
@@ -268,7 +292,7 @@ const Navbar = () => {
               onClick={() => setMobileMenuOpen(false)}
               className="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100"
             >
-              Officer Desk
+              {t("nav", "officerDesk")}
             </Link>
           )}
 
@@ -278,7 +302,7 @@ const Navbar = () => {
               onClick={() => setMobileMenuOpen(false)}
               className="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100"
             >
-              Admin Console
+              {t("nav", "adminConsole")}
             </Link>
           )}
 
@@ -286,7 +310,11 @@ const Navbar = () => {
             {isAuthenticated ? (
               <div className="space-y-2">
                 <div className="px-3 text-xs text-slate-500 font-medium">
-                  Logged in as <strong className="text-slate-900">{user?.fullName}</strong> ({user?.role})
+                  {t("nav", "loggedInAs")}: <strong className="text-slate-900">{user?.fullName}</strong> (
+                  {language === "ta"
+                    ? (user?.role === "officer" ? "அலுவலர்" : user?.role === "admin" ? "நிர்வாகி" : "குடிமகன்")
+                    : user?.role}
+                  )
                 </div>
                 <button
                   onClick={() => {
@@ -295,7 +323,7 @@ const Navbar = () => {
                   }}
                   className="w-full text-left px-3 py-2 text-sm font-semibold text-rose-600 hover:bg-rose-50 rounded-lg"
                 >
-                  Logout
+                  {t("nav", "logout")}
                 </button>
               </div>
             ) : (
@@ -305,14 +333,14 @@ const Navbar = () => {
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-center px-4 py-2 text-sm font-semibold text-slate-700 border border-slate-200 rounded-lg"
                 >
-                  Login
+                  {t("nav", "login")}
                 </Link>
                 <Link
                   to="/register"
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-center px-4 py-2 text-sm font-semibold text-white bg-gov-700 rounded-lg"
                 >
-                  Register
+                  {t("nav", "signUp")}
                 </Link>
               </div>
             )}

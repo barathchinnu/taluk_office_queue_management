@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { tokenService, appointmentService } from "../../services/api";
 import { getSocket, joinDepartment } from "../../services/socket";
 import StatusBadge from "../../components/StatusBadge";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Ticket,
   Clock,
@@ -24,6 +25,7 @@ const CitizenDashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [checkInLoading, setCheckInLoading] = useState(null);
   const [message, setMessage] = useState(null);
+  const { t, tDeptName, tServiceName, language } = useLanguage();
 
   const fetchData = useCallback(async () => {
     try {
@@ -91,14 +93,19 @@ const CitizenDashboard = () => {
       if (res.success) {
         setMessage({
           type: "success",
-          text: `Check-in successful! Your token is ${res.token.tokenDisplay}.`,
+          text:
+            language === "ta"
+              ? `செக்-இன் வெற்றிகரமாக முடிந்தது! உங்கள் டோக்கன் எண் ${res.token.tokenDisplay}.`
+              : `Check-in successful! Your token is ${res.token.tokenDisplay}.`,
         });
         fetchData();
       }
     } catch (err) {
       setMessage({
         type: "error",
-        text: err.response?.data?.message || "Check-in failed. Please try again.",
+        text:
+          err.response?.data?.message ||
+          (language === "ta" ? "செக்-இன் தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்." : "Check-in failed. Please try again."),
       });
     } finally {
       setCheckInLoading(null);
@@ -109,7 +116,7 @@ const CitizenDashboard = () => {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
         <div className="w-10 h-10 border-4 border-gov-700 border-t-transparent rounded-full animate-spin"></div>
-        <p className="mt-3 text-sm text-slate-500 font-medium">Loading your token & appointments...</p>
+        <p className="mt-3 text-sm text-slate-500 font-medium">{t("citizen", "loadingDesk")}</p>
       </div>
     );
   }
@@ -120,10 +127,10 @@ const CitizenDashboard = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200/80 pb-5">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">
-            Citizen Service Desk
+            {t("citizen", "deskTitle")}
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
-            Real-time status of your active token, queue wait time and upcoming appointments
+            {t("citizen", "deskSubtitle")}
           </p>
         </div>
 
@@ -134,7 +141,7 @@ const CitizenDashboard = () => {
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 shadow-xs transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin text-indigo-600" : ""}`} />
-            <span>Refresh</span>
+            <span>{t("citizen", "refreshBtn")}</span>
           </button>
 
           <Link
@@ -142,7 +149,7 @@ const CitizenDashboard = () => {
             className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-gov-700 hover:bg-gov-800 rounded-lg shadow-sm transition-all"
           >
             <Ticket className="w-3.5 h-3.5 text-amber-300" />
-            <span>Take New Token</span>
+            <span>{t("citizen", "takeNewToken")}</span>
           </Link>
         </div>
       </div>
@@ -168,7 +175,7 @@ const CitizenDashboard = () => {
             onClick={() => setMessage(null)}
             className="text-xs font-bold hover:underline ml-4"
           >
-            Dismiss
+            {t("citizen", "dismiss")}
           </button>
         </div>
       )}
@@ -182,7 +189,7 @@ const CitizenDashboard = () => {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs uppercase tracking-widest font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
-                  Active Live Token
+                  {t("citizen", "activeLiveToken")}
                 </span>
                 <StatusBadge status={activeToken.status} />
               </div>
@@ -192,22 +199,22 @@ const CitizenDashboard = () => {
                   {activeToken.tokenDisplay}
                 </h2>
                 <span className="text-xs text-slate-500 font-medium">
-                  Token #{activeToken.tokenNumber}
+                  {t("citizen", "tokenNumPrefix")} {activeToken.tokenNumber}
                 </span>
               </div>
 
               <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-600">
                 <span className="flex items-center gap-1 font-semibold text-slate-900">
                   <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                  {activeToken.department?.name}
+                  {tDeptName(activeToken.department?.name)}
                 </span>
                 <span>•</span>
-                <span>{activeToken.service?.name}</span>
+                <span>{tServiceName(activeToken.service?.name)}</span>
                 {activeToken.counter && (
                   <>
                     <span>•</span>
                     <span className="text-indigo-700 font-bold bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100">
-                      Assigned: {activeToken.counter.name} (Counter #{activeToken.counter.counterNumber})
+                      {language === "ta" ? "ஒதுக்கப்பட்ட கவுண்டர்" : "Assigned"}: {activeToken.counter.name} ({language === "ta" ? "கவுண்டர்" : "Counter"} #{activeToken.counter.counterNumber})
                     </span>
                   </>
                 )}
@@ -220,27 +227,27 @@ const CitizenDashboard = () => {
                 <div className="flex items-center justify-center gap-1 text-slate-400 mb-1">
                   <Users className="w-3.5 h-3.5 text-amber-500" />
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    People Ahead
+                    {t("citizen", "queuePosition")}
                   </span>
                 </div>
                 <div className="text-2xl sm:text-3xl font-black text-slate-900">
                   {activeToken.peopleAhead ?? 0}
                 </div>
-                <span className="text-[10px] text-slate-400">waiting tokens</span>
+                <span className="text-[10px] text-slate-400">{t("citizen", "waitingTokens")}</span>
               </div>
 
               <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs text-center min-w-[130px]">
                 <div className="flex items-center justify-center gap-1 text-slate-400 mb-1">
                   <Clock className="w-3.5 h-3.5 text-emerald-500" />
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                    Est. Wait Time
+                    {t("citizen", "estWaitTime")}
                   </span>
                 </div>
                 <div className="text-2xl sm:text-3xl font-black text-emerald-600">
                   ~{activeToken.estimatedWaitTime ?? 0}
-                  <span className="text-xs font-semibold ml-1">mins</span>
+                  <span className="text-xs font-semibold ml-1">{t("citizen", "minutes")}</span>
                 </div>
-                <span className="text-[10px] text-slate-400">approximate</span>
+                <span className="text-[10px] text-slate-400">{t("citizen", "approximate")}</span>
               </div>
             </div>
           </div>
@@ -250,15 +257,15 @@ const CitizenDashboard = () => {
             <div className="flex items-center gap-2">
               {activeToken.status === "called" ? (
                 <span className="text-blue-700 font-bold flex items-center gap-1.5 animate-bounce">
-                  🔔 Please proceed immediately to your assigned counter!
+                  {t("citizen", "calloutProceed")}
                 </span>
               ) : activeToken.status === "serving" ? (
                 <span className="text-purple-700 font-bold flex items-center gap-1.5">
-                  💼 You are currently being served at the counter.
+                  {t("citizen", "calloutServing")}
                 </span>
               ) : (
                 <span>
-                  Please remain seated in the waiting hall. Your token will be announced on the screen when ready.
+                  {t("citizen", "calloutWaiting")}
                 </span>
               )}
             </div>
@@ -267,7 +274,7 @@ const CitizenDashboard = () => {
               to={`/display/${activeToken.department?._id}`}
               className="font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
             >
-              <span>View Department Hall Screen</span>
+              <span>{t("citizen", "viewDeptHallScreen")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -279,9 +286,9 @@ const CitizenDashboard = () => {
             <Ticket className="w-8 h-8" />
           </div>
           <div>
-            <h2 className="text-lg font-bold text-slate-900">No Active Token Right Now</h2>
+            <h2 className="text-lg font-bold text-slate-900">{t("citizen", "noActiveTokenTitle")}</h2>
             <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
-              Visiting the Taluk Office today? Generate a paperless digital token to reserve your spot in the service queue.
+              {t("citizen", "noActiveTokenDesc")}
             </p>
           </div>
           <div className="pt-2">
@@ -290,7 +297,7 @@ const CitizenDashboard = () => {
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gov-700 hover:bg-gov-800 text-white font-bold text-xs shadow-sm hover:shadow transition-all"
             >
               <Ticket className="w-4 h-4 text-amber-300" />
-              <span>Generate Walk-in Token</span>
+              <span>{t("citizen", "generateTokenBtn")}</span>
             </Link>
           </div>
         </div>
@@ -303,16 +310,16 @@ const CitizenDashboard = () => {
             <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
               <Ticket className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">Walk-in Token</h3>
+            <h3 className="text-base font-bold text-slate-900">{t("citizen", "walkInCardTitle")}</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Generate an instant queue token for same-day taluk office services without standing in physical queues.
+              {t("citizen", "walkInCardDesc")}
             </p>
           </div>
           <Link
             to="/citizen/take-token"
             className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 pt-2 border-t border-slate-100"
           >
-            <span>Take Token Now</span>
+            <span>{t("citizen", "walkInCardBtn")}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -322,16 +329,16 @@ const CitizenDashboard = () => {
             <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
               <Calendar className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">Book Appointment</h3>
+            <h3 className="text-base font-bold text-slate-900">{t("citizen", "bookCardTitle")}</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Schedule your visit for upcoming dates. Avoid morning rushes and get priority check-in directly to the queue.
+              {t("citizen", "bookCardDesc")}
             </p>
           </div>
           <Link
             to="/citizen/appointments"
             className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 pt-2 border-t border-slate-100"
           >
-            <span>Book Visit Slot</span>
+            <span>{t("citizen", "bookCardBtn")}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -341,16 +348,16 @@ const CitizenDashboard = () => {
             <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
               <Clock className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-slate-900">Live Queue Monitor</h3>
+            <h3 className="text-base font-bold text-slate-900">{t("citizen", "liveMonitorCardTitle")}</h3>
             <p className="text-xs text-slate-500 leading-relaxed">
-              View current tokens being served across Revenue, Certificates, Welfare, and Admin counters in real-time.
+              {t("citizen", "liveMonitorCardDesc")}
             </p>
           </div>
           <Link
             to="/citizen/queue"
             className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 pt-2 border-t border-slate-100"
           >
-            <span>View Department Queues</span>
+            <span>{t("citizen", "liveMonitorCardBtn")}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -361,21 +368,23 @@ const CitizenDashboard = () => {
         <div className="flex justify-between items-center">
           <div>
             <h3 className="text-lg font-bold text-slate-900 font-heading">
-              Your Booked Appointments
+              {t("citizen", "upcomingApptsTitle")}
             </h3>
-            <p className="text-xs text-slate-500">Upcoming office visits and check-in options</p>
+            <p className="text-xs text-slate-500">
+              {language === "ta" ? "அலுவலக வருகை மற்றும் வரிசை செக்-இன் விபரங்கள்" : "Upcoming office visits and check-in options"}
+            </p>
           </div>
           <Link
             to="/citizen/appointments"
             className="text-xs font-bold text-indigo-600 hover:text-indigo-800"
           >
-            Manage All →
+            {t("citizen", "manageAll")}
           </Link>
         </div>
 
         {appointments.length === 0 ? (
           <div className="text-center py-6 text-slate-400 text-xs">
-            You have no booked appointments. Click "Book Appointment" to plan a visit.
+            {t("citizen", "noApptsDesc")}
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -386,14 +395,14 @@ const CitizenDashboard = () => {
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900 text-sm">{appt.service?.name}</span>
+                    <span className="font-bold text-slate-900 text-sm">{tServiceName(appt.service?.name)}</span>
                     <StatusBadge status={appt.status} />
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                    <span className="font-medium text-slate-700">{appt.department?.name}</span>
+                    <span className="font-medium text-slate-700">{tDeptName(appt.department?.name)}</span>
                     <span>•</span>
                     <span>
-                      {new Date(appt.appointmentDate).toLocaleDateString("en-IN", {
+                      {new Date(appt.appointmentDate).toLocaleDateString(language === "ta" ? "ta-IN" : "en-IN", {
                         day: "numeric",
                         month: "short",
                         year: "numeric",
@@ -416,7 +425,7 @@ const CitizenDashboard = () => {
                       ) : (
                         <Ticket className="w-3.5 h-3.5 text-amber-300" />
                       )}
-                      <span>Check In to Queue</span>
+                      <span>{t("citizen", "checkInToQueue")}</span>
                     </button>
                   )}
                 </div>

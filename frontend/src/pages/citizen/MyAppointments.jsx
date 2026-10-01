@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { departmentService, serviceService, appointmentService } from "../../services/api";
 import StatusBadge from "../../components/StatusBadge";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   Calendar,
   Clock,
@@ -20,6 +21,7 @@ const MyAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [services, setServices] = useState([]);
+  const { t, tDeptName, tServiceName, language } = useLanguage();
 
   // Form State
   const [selectedDept, setSelectedDept] = useState("");
@@ -79,7 +81,10 @@ const MyAppointments = () => {
   const handleBookAppointment = async (e) => {
     e.preventDefault();
     if (!selectedDept || !selectedService || !appointmentDate) {
-      setMessage({ type: "error", text: "Please fill in all required fields" });
+      setMessage({
+        type: "error",
+        text: language === "ta" ? "அனைத்து தேவையான விவரங்களையும் நிரப்பவும்" : "Please fill in all required fields",
+      });
       return;
     }
 
@@ -98,7 +103,7 @@ const MyAppointments = () => {
       if (res.success) {
         setMessage({
           type: "success",
-          text: "Appointment booked successfully!",
+          text: language === "ta" ? "முன்பதிவு வெற்றிகரமாக முடிந்தது!" : "Appointment booked successfully!",
         });
         setActiveTab("my");
         fetchAppointments();
@@ -112,7 +117,9 @@ const MyAppointments = () => {
       console.error("Booking error:", err);
       setMessage({
         type: "error",
-        text: err.response?.data?.message || "Failed to book appointment",
+        text:
+          err.response?.data?.message ||
+          (language === "ta" ? "முன்பதிவு செய்ய முடியவில்லை" : "Failed to book appointment"),
       });
     } finally {
       setBookingLoading(false);
@@ -128,7 +135,10 @@ const MyAppointments = () => {
       if (res.success && res.token) {
         setMessage({
           type: "success",
-          text: `Check-in successful! Generated Token: ${res.token.tokenDisplay}. View your queue position on the dashboard.`,
+          text:
+            language === "ta"
+              ? `செக்-இன் வெற்றிகரமாக முடிந்தது! டோக்கன் எண்: ${res.token.tokenDisplay}. முகப்பு திரையில் வரிசை நிலையைக் காணலாம்.`
+              : `Check-in successful! Generated Token: ${res.token.tokenDisplay}. View your queue position on the dashboard.`,
         });
         fetchAppointments();
         navigate("/citizen");
@@ -136,7 +146,9 @@ const MyAppointments = () => {
     } catch (err) {
       setMessage({
         type: "error",
-        text: err.response?.data?.message || "Check-in failed. Please try again.",
+        text:
+          err.response?.data?.message ||
+          (language === "ta" ? "செக்-இன் தோல்வியடைந்தது. மீண்டும் முயற்சிக்கவும்." : "Check-in failed. Please try again."),
       });
     } finally {
       setActionLoading(null);
@@ -144,7 +156,7 @@ const MyAppointments = () => {
   };
 
   const handleCancel = async (appointmentId) => {
-    if (!window.confirm("Are you sure you want to cancel this appointment?")) {
+    if (!window.confirm(t("appointments", "confirmCancelPrompt"))) {
       return;
     }
 
@@ -156,14 +168,16 @@ const MyAppointments = () => {
       if (res.success) {
         setMessage({
           type: "success",
-          text: "Appointment cancelled successfully.",
+          text: language === "ta" ? "முன்பதிவு வெற்றிகரமாக ரத்து செய்யப்பட்டது." : "Appointment cancelled successfully.",
         });
         fetchAppointments();
       }
     } catch (err) {
       setMessage({
         type: "error",
-        text: err.response?.data?.message || "Cancellation failed.",
+        text:
+          err.response?.data?.message ||
+          (language === "ta" ? "ரத்து செய்ய முடியவில்லை." : "Cancellation failed."),
       });
     } finally {
       setActionLoading(null);
@@ -182,16 +196,16 @@ const MyAppointments = () => {
         <div>
           <div className="flex items-center gap-2 text-xs text-slate-500 mb-1">
             <Link to="/citizen" className="hover:text-indigo-600 font-medium">
-              Citizen Desk
+              {t("takeToken", "breadcrumbDesk")}
             </Link>
             <span>/</span>
-            <span className="font-semibold text-slate-900">Appointments</span>
+            <span className="font-semibold text-slate-900">{t("nav", "appointments")}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 font-heading">
-            Taluk Office Appointments
+            {t("appointments", "pageTitle")}
           </h1>
           <p className="text-xs text-slate-500">
-            Book upcoming visit slots or check in to join the queue on your scheduled date
+            {t("appointments", "pageSubtitle")}
           </p>
         </div>
 
@@ -205,7 +219,7 @@ const MyAppointments = () => {
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            My Appointments ({appointments.length})
+            {t("appointments", "myTab")} ({appointments.length})
           </button>
           <button
             onClick={() => setActiveTab("book")}
@@ -216,7 +230,7 @@ const MyAppointments = () => {
             }`}
           >
             <Plus className="w-3.5 h-3.5" />
-            Book New
+            {t("appointments", "bookTab")}
           </button>
         </div>
       </div>
@@ -242,7 +256,7 @@ const MyAppointments = () => {
             onClick={() => setMessage(null)}
             className="text-xs font-bold hover:underline ml-4"
           >
-            Dismiss
+            {t("citizen", "dismiss")}
           </button>
         </div>
       )}
@@ -252,17 +266,17 @@ const MyAppointments = () => {
         <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs max-w-2xl mx-auto space-y-6">
           <div className="space-y-1">
             <h2 className="text-xl font-bold text-slate-900 font-heading">
-              Schedule Advance Office Visit
+              {t("appointments", "scheduleTitle")}
             </h2>
             <p className="text-xs text-slate-500">
-              Appointments allow priority check-in on the selected date without early morning walk-in rush.
+              {t("appointments", "scheduleDesc")}
             </p>
           </div>
 
           <form onSubmit={handleBookAppointment} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Select Department *
+                {t("appointments", "selectDept")}
               </label>
               <select
                 required
@@ -270,10 +284,10 @@ const MyAppointments = () => {
                 onChange={(e) => handleDeptChange(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-gov-500"
               >
-                <option value="">-- Choose Department --</option>
+                <option value="">{t("appointments", "chooseDeptPrompt")}</option>
                 {departments.map((d) => (
                   <option key={d._id} value={d._id}>
-                    {d.name} ({d.code})
+                    {tDeptName(d.name)} ({d.code})
                   </option>
                 ))}
               </select>
@@ -281,7 +295,7 @@ const MyAppointments = () => {
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Select Service *
+                {t("appointments", "selectService")}
               </label>
               <select
                 required
@@ -291,11 +305,11 @@ const MyAppointments = () => {
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-gov-500 disabled:opacity-50"
               >
                 <option value="">
-                  {selectedDept ? "-- Choose Service --" : "-- Select a Department First --"}
+                  {selectedDept ? t("appointments", "chooseServicePrompt") : t("appointments", "selectDeptFirst")}
                 </option>
                 {services.map((s) => (
                   <option key={s._id} value={s._id}>
-                    {s.name} ({s.averageServiceTime || 10} mins)
+                    {tServiceName(s.name)} ({s.averageServiceTime || 10} {t("appointments", "minsSuffix")})
                   </option>
                 ))}
               </select>
@@ -304,7 +318,7 @@ const MyAppointments = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Appointment Date *
+                  {t("appointments", "apptDate")}
                 </label>
                 <input
                   type="date"
@@ -318,7 +332,7 @@ const MyAppointments = () => {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Time Slot *
+                  {t("appointments", "timeSlot")}
                 </label>
                 <select
                   required
@@ -336,13 +350,13 @@ const MyAppointments = () => {
 
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
-                Purpose / Application Notes (Optional)
+                {t("appointments", "purposeLabel")}
               </label>
               <textarea
                 rows={3}
                 value={purpose}
                 onChange={(e) => setPurpose(e.target.value)}
-                placeholder="e.g. Document verification for certificate application..."
+                placeholder={t("appointments", "purposePlaceholder")}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:border-gov-500"
               ></textarea>
             </div>
@@ -358,7 +372,7 @@ const MyAppointments = () => {
                 ) : (
                   <>
                     <Calendar className="w-4 h-4 text-emerald-300" />
-                    <span>Confirm Booking</span>
+                    <span>{t("appointments", "confirmBooking")}</span>
                   </>
                 )}
               </button>
@@ -368,7 +382,7 @@ const MyAppointments = () => {
                 onClick={() => setActiveTab("my")}
                 className="px-5 py-3 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
               >
-                Cancel
+                {t("appointments", "cancelBtn")}
               </button>
             </div>
           </form>
@@ -390,16 +404,16 @@ const MyAppointments = () => {
                 <Calendar className="w-7 h-7" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-slate-900">No Appointments Found</h3>
+                <h3 className="text-base font-bold text-slate-900">{t("appointments", "noApptsFound")}</h3>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-                  Schedule your visit in advance to avoid waiting hall congestion and get priority check-in.
+                  {t("appointments", "noApptsSubtitle")}
                 </p>
               </div>
               <button
                 onClick={() => setActiveTab("book")}
                 className="px-5 py-2.5 rounded-xl bg-gov-700 hover:bg-gov-800 text-white font-bold text-xs shadow-xs"
               >
-                Book Your First Appointment
+                {t("appointments", "bookFirstAppt")}
               </button>
             </div>
           ) : (
@@ -415,19 +429,19 @@ const MyAppointments = () => {
                   >
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-slate-900">{appt.service?.name}</span>
+                        <span className="text-sm font-bold text-slate-900">{tServiceName(appt.service?.name)}</span>
                         <StatusBadge status={appt.status} />
                       </div>
 
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600">
                         <span className="font-semibold text-slate-800 flex items-center gap-1">
                           <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                          {appt.department?.name}
+                          {tDeptName(appt.department?.name)}
                         </span>
                         <span>•</span>
                         <span className="flex items-center gap-1 font-semibold text-slate-800">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          {new Date(appt.appointmentDate).toLocaleDateString("en-IN", {
+                          {new Date(appt.appointmentDate).toLocaleDateString(language === "ta" ? "ta-IN" : "en-IN", {
                             weekday: "short",
                             day: "numeric",
                             month: "short",
@@ -460,7 +474,7 @@ const MyAppointments = () => {
                             ) : (
                               <Ticket className="w-3.5 h-3.5 text-amber-300" />
                             )}
-                            <span>Check-in to Queue</span>
+                            <span>{t("appointments", "checkInToQueue")}</span>
                           </button>
 
                           <button
@@ -468,7 +482,7 @@ const MyAppointments = () => {
                             disabled={actionLoading === appt._id}
                             className="px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors"
                           >
-                            Cancel
+                            {t("appointments", "cancelBtn")}
                           </button>
                         </>
                       )}
@@ -478,7 +492,7 @@ const MyAppointments = () => {
                           to="/citizen"
                           className="px-4 py-2 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 flex items-center gap-1"
                         >
-                          <span>Token Active</span>
+                          <span>{t("appointments", "tokenActive")}</span>
                           <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
                       )}
