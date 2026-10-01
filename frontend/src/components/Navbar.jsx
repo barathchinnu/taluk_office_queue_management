@@ -20,7 +20,7 @@ import {
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
