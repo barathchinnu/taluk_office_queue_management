@@ -1233,10 +1233,40 @@ export const translations = {
         both: "Nativity, legal heir & certificates • இருப்பிடம் மற்றும் வாரிசு சான்றிதழ்கள்",
       },
     },
+    "Aadhaar Services": {
+      en: "Aadhaar Services",
+      ta: "ஆதார் சேவைகள்",
+      both: "Aadhaar Services • ஆதார் சேவைகள்",
+      desc: {
+        en: "UIDAI Aadhaar new enrollment, mobile/address update, biometric and demographic corrections",
+        ta: "புதிய ஆதார் பதிவு, கைபேசி/முகவரி மாற்றம், பயோமெட்ரிக் மற்றும் பெயர்/பிறந்ததேதி திருத்தம்",
+        both: "New enrollment, update & correction • புதிய ஆதார், முகவரி மாற்றம் & திருத்தம்",
+      },
+    },
   },
 
   // Common Services
   services: {
+    "Aadhaar Apply": {
+      en: "Aadhaar Apply (New Enrollment)",
+      ta: "புதிய ஆதார் பதிவு",
+      both: "Aadhaar Apply • புதிய ஆதார் பதிவு",
+    },
+    "Aadhaar Update": {
+      en: "Aadhaar Update (Address/Mobile/Biometrics)",
+      ta: "ஆதார் விவர புதுப்பித்தல்",
+      both: "Aadhaar Update • ஆதார் புதுப்பித்தல்",
+    },
+    "Aadhaar Correction": {
+      en: "Aadhaar Correction (Name/DOB/Gender)",
+      ta: "ஆதார் பிழை திருத்தம்",
+      both: "Aadhaar Correction • ஆதார் திருத்தம்",
+    },
+    "Patta Related Service": {
+      en: "Patta Related Service",
+      ta: "பட்டா தொடர்பான சேவை",
+      both: "Patta Related Service • பட்டா சேவை",
+    },
     "Patta Transfer": {
       en: "Patta Transfer",
       ta: "பட்டா மாறுதல்",
@@ -1246,6 +1276,31 @@ export const translations = {
       en: "Income Certificate",
       ta: "வருமானச் சான்றிதழ்",
       both: "Income Certificate • வருமானச் சான்றிதழ்",
+    },
+    "Revenue Petition": {
+      en: "Revenue Petition",
+      ta: "வருவாய் மனு",
+      both: "Revenue Petition • வருவாய் மனு",
+    },
+    "Residence Certificate": {
+      en: "Residence Certificate",
+      ta: "குடியிருப்பு சான்றிதழ்",
+      both: "Residence Certificate • குடியிருப்பு சான்றிதழ்",
+    },
+    "Old Age Pension Scheme": {
+      en: "Old Age Pension Scheme",
+      ta: "முதியோர் உதவித்தொகை திட்டம்",
+      both: "Old Age Pension • முதியோர் உதவித்தொகை",
+    },
+    "Grievance Redressal": {
+      en: "Grievance Redressal",
+      ta: "மக்கள் குறைதீர்ப்பு மனு",
+      both: "Grievance Redressal • மக்கள் குறைதீர்ப்பு",
+    },
+    "Other Government Services": {
+      en: "Other Government Services",
+      ta: "இதர அரசு சேவைகள்",
+      both: "Other Gov Services • இதர அரசு சேவைகள்",
     },
     "Community Certificate": {
       en: "Community Certificate",

@@ -18,6 +18,12 @@ const tokenSchema = new mongoose.Schema(
       default: null,
     },
 
+    aadhaarApplication: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "AadhaarApplication",
+      default: null,
+    },
+
     citizen: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

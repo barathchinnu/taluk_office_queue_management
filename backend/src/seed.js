@@ -53,6 +53,11 @@ const seedDatabase = async () => {
         code: "CERT",
         description: "Issuance of nativity, residence, legal heir, first graduate and community certificates",
       },
+      {
+        name: "Aadhaar Services",
+        code: "UID",
+        description: "UIDAI Aadhaar new enrollment, mobile/address update, biometric and demographic corrections",
+      },
     ];
 
     const departmentMap = {};
@@ -147,6 +152,26 @@ const seedDatabase = async () => {
         description: "Enquiry and guidance for miscellaneous taluk services",
         averageServiceTime: 10,
       },
+
+      // Aadhaar Services
+      {
+        departmentName: "Aadhaar Services",
+        name: "Aadhaar Apply",
+        description: "Apply for new 12-digit Aadhaar enrollment for citizens and children with biometric capture",
+        averageServiceTime: 15,
+      },
+      {
+        departmentName: "Aadhaar Services",
+        name: "Aadhaar Update",
+        description: "Update mobile number, address, email ID, photo, or biometric details in existing Aadhaar",
+        averageServiceTime: 10,
+      },
+      {
+        departmentName: "Aadhaar Services",
+        name: "Aadhaar Correction",
+        description: "Correction of name spelling, date of birth, gender, and demographic details with documentary proof",
+        averageServiceTime: 10,
+      },
     ];
 
     for (const s of servicesData) {
@@ -207,6 +232,39 @@ const seedDatabase = async () => {
       console.log("ℹ️ Test Officer profile verified: OFF002");
     }
 
+    // Check Aadhaar Kendra Officer (aadhaar@talukoffice.com)
+    let aadhaarOfficerUser = await User.findOne({ email: "aadhaar@talukoffice.com" });
+    if (!aadhaarOfficerUser) {
+      const hashedAadhaarPassword = await bcrypt.hash("officer123", 10);
+      aadhaarOfficerUser = await User.create({
+        fullName: "Aadhaar Kendra Officer",
+        email: "aadhaar@talukoffice.com",
+        phone: "9876543299",
+        password: hashedAadhaarPassword,
+        role: "officer",
+        isVerified: true,
+      });
+      console.log("✅ Created Aadhaar Officer user: aadhaar@talukoffice.com / officer123");
+    }
+
+    let aadhaarOfficerProfile = await Officer.findOne({ employeeId: "UID001" });
+    if (!aadhaarOfficerProfile) {
+      aadhaarOfficerProfile = await Officer.create({
+        user: aadhaarOfficerUser._id,
+        department: departmentMap["Aadhaar Services"]._id,
+        employeeId: "UID001",
+        designation: "UIDAI Kendra Operator",
+        isAvailable: true,
+        isActive: true,
+      });
+      console.log("✅ Created Aadhaar Officer profile: UID001");
+    } else {
+      aadhaarOfficerProfile.isAvailable = true;
+      aadhaarOfficerProfile.isActive = true;
+      await aadhaarOfficerProfile.save();
+      console.log("ℹ️ Aadhaar Officer profile verified: UID001");
+    }
+
     // 5. Counters
     const countersData = [
       {
@@ -229,6 +287,12 @@ const seedDatabase = async () => {
         counterNumber: 4,
         name: "Certificates Counter 4",
         departmentName: "Certificates",
+      },
+      {
+        counterNumber: 5,
+        name: "Aadhaar Kendra Counter 5",
+        departmentName: "Aadhaar Services",
+        assignOfficerId: aadhaarOfficerProfile._id,
       },
     ];
 

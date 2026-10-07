@@ -16,6 +16,7 @@ import {
   CheckCircle,
   HelpCircle,
   CheckCircle2,
+  Sparkles,
 } from "lucide-react";
 
 const CitizenDashboard = () => {
@@ -302,6 +303,48 @@ const CitizenDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Aadhaar e-Kendra Special Highlight Card */}
+      <div className="bg-gradient-to-r from-orange-500/10 via-amber-500/10 to-emerald-500/10 rounded-3xl border border-amber-300/60 p-6 sm:p-7 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center shrink-0 shadow-md">
+            <Sparkles className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-900 px-2 py-0.5 rounded-full border border-amber-200">
+                UIDAI • Aadhaar Services
+              </span>
+              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                Counter #5 Active
+              </span>
+            </div>
+            <h3 className="text-base sm:text-lg font-bold text-slate-900 mt-1 font-heading">
+              {language === "ta" ? "ஆதார் இ-சேவை மையம் (UIDAI)" : "Taluk Aadhaar Seva Kendra"}
+            </h3>
+            <p className="text-xs text-slate-600 mt-0.5 max-w-xl">
+              {language === "ta"
+                ? "புதிய ஆதார் பதிவு, கைபேசி/முகவரி விவர புதுப்பித்தல் மற்றும் பெயர் திருத்த சேவைகளுக்கு நேரடி டோக்கன் அல்லது முன்பதிவு செய்யலாம்."
+                : "Walk-in tokens and advance appointments available for New Enrollment, Address/Mobile Update, and Biometric Correction."}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <Link
+            to="/citizen/take-token"
+            className="flex-1 md:flex-none text-center px-4 py-2.5 rounded-xl bg-gov-700 hover:bg-gov-800 text-white font-bold text-xs shadow-sm hover:shadow transition-all"
+          >
+            {language === "ta" ? "ஆதார் டோக்கன் பெறுக" : "Get Aadhaar Token"}
+          </Link>
+          <Link
+            to="/citizen/appointments"
+            className="flex-1 md:flex-none text-center px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs border border-slate-300 shadow-xs transition-all"
+          >
+            {language === "ta" ? "முன்பதிவு செய்க" : "Book Slot"}
+          </Link>
+        </div>
+      </div>
 
       {/* Quick Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

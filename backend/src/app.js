@@ -11,6 +11,7 @@ const appointmentRoutes = require("./routes/appointmentRoutes");
 const tokenRoutes = require("./routes/tokenRoutes");
 const citizenRoutes = require("./routes/citizenRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const aadhaarRoutes = require("./routes/aadhaarRoutes");
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use("/api/appointments", appointmentRoutes);
 app.use("/api/tokens", tokenRoutes);
 app.use("/api/citizens", citizenRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/aadhaar", aadhaarRoutes);
 
 // Root Health Check
 app.get("/", (req, res) => {
