@@ -20,8 +20,16 @@ const PortalTitleBar = ({ subtitle = "Government Services, Appointments & Queue 
           </span>
         </div>
 
-        {showLocation && (
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <Link
+            to="/display"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-[11px] shadow-xs transition-colors"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-ping" />
+            <span>📺 Live Queue Screen</span>
+          </Link>
+
+          {showLocation && (
             <button
               onClick={openLocationModal}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold border border-white/20 transition-colors"
@@ -30,8 +38,8 @@ const PortalTitleBar = ({ subtitle = "Government Services, Appointments & Queue 
               <span>{officeName || "Pollachi Taluk Office"}</span>
               <span className="text-amber-300 font-bold underline ml-0.5">Switch</span>
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

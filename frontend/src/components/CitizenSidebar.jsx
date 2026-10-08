@@ -80,6 +80,25 @@ const CitizenSidebar = ({
       to: "/citizen",
     },
     {
+      id: "live_queue",
+      label: language === "ta" ? "நேரலை வரிசை நிலை" : "Live Queue Status",
+      icon: Clock,
+      to: "/citizen/queue",
+      liveBadge: true,
+    },
+    {
+      id: "public_display",
+      label: language === "ta" ? "பொது காட்சிப்பலகை" : "Public Screen (Hall)",
+      icon: Monitor,
+      to: "/display",
+    },
+    {
+      id: "token",
+      label: language === "ta" ? "என் டோக்கன்" : "My Token",
+      icon: Ticket,
+      to: "/citizen/take-token",
+    },
+    {
       id: "location",
       label: language === "ta" ? "இருப்பிடத்தை தேர்வு செய்க" : "Select Location",
       icon: MapPin,
@@ -91,12 +110,6 @@ const CitizenSidebar = ({
       label: language === "ta" ? "அரசு சேவைகள்" : "Government Services",
       icon: Landmark,
       to: "/services",
-    },
-    {
-      id: "token",
-      label: language === "ta" ? "என் டோக்கன்" : "My Token",
-      icon: Ticket,
-      to: "/citizen/take-token",
     },
     {
       id: "appointments",
@@ -256,6 +269,13 @@ const CitizenSidebar = ({
 
                 {!collapsed && (
                   <span className="truncate leading-none">{item.label}</span>
+                )}
+
+                {!collapsed && item.liveBadge && (
+                  <span className="ml-auto text-[9px] font-extrabold uppercase bg-emerald-500 text-slate-950 px-1.5 py-0.5 rounded-full flex items-center gap-1 shrink-0 animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white" />
+                    LIVE
+                  </span>
                 )}
 
                 {/* Collapsed Tooltip */}

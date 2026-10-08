@@ -213,6 +213,53 @@ const Navbar = ({ onToggleMobileSidebar = () => {} }) => {
               </Link>
             </div>
 
+            {/* Center: Public Navigation Links on Desktop */}
+            <nav className="hidden md:flex items-center gap-1 lg:gap-2">
+              <Link
+                to="/"
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  isActive("/")
+                    ? "bg-blue-50 text-[#0b3b60] font-bold"
+                    : "text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+                }`}
+              >
+                Home
+              </Link>
+              <Link
+                to="/services"
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  isActive("/services")
+                    ? "bg-blue-50 text-[#0b3b60] font-bold"
+                    : "text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+                }`}
+              >
+                Services
+              </Link>
+              <Link
+                to="/display"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-extrabold transition-colors ${
+                  isActive("/display")
+                    ? "bg-amber-100 text-amber-950 border border-amber-300"
+                    : "text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200"
+                }`}
+              >
+                <Monitor className="w-3.5 h-3.5 text-amber-700" />
+                <span>Live Queue Display</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping ml-0.5" />
+              </Link>
+              <Link
+                to="/track"
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  isActive("/track")
+                    ? "bg-blue-50 text-[#0b3b60] font-bold"
+                    : "text-slate-700 hover:text-slate-900 hover:bg-slate-100"
+                }`}
+              >
+                <Search className="w-3.5 h-3.5 text-slate-500" />
+                <span>Track Application</span>
+              </Link>
+            </nav>
+
             {/* Right: Language, Help, Login */}
             <div className="flex items-center gap-2 sm:gap-4">
               {/* Selected Office Badge */}

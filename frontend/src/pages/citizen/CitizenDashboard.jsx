@@ -307,8 +307,15 @@ const CitizenDashboard = () => {
               <div className="text-xs text-slate-500 mt-0.5">
                 Token #{activeToken.tokenNumber} • {tServiceName(activeToken.service?.name)}
               </div>
-              <div className="mt-2">
+              <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
                 <StatusBadge status={activeToken.status} />
+                <Link
+                  to="/citizen/queue"
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0b3b60] hover:text-[#00809d] bg-blue-50 px-2 py-0.5 rounded border border-blue-200"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Status →
+                </Link>
               </div>
             </div>
           ) : (
@@ -319,12 +326,19 @@ const CitizenDashboard = () => {
               <div className="text-xs text-slate-500 mt-0.5">
                 Generate a walk-in queue pass
               </div>
-              <div className="mt-2">
+              <div className="mt-2 flex items-center gap-2">
                 <Link
                   to="/citizen/take-token"
                   className="text-xs font-bold text-[#0b3b60] hover:underline"
                 >
                   Take Token →
+                </Link>
+                <span>•</span>
+                <Link
+                  to="/citizen/queue"
+                  className="text-xs font-semibold text-slate-600 hover:text-slate-900"
+                >
+                  View Queue
                 </Link>
               </div>
             </div>
@@ -405,25 +419,39 @@ const CitizenDashboard = () => {
 
       {/* ==========================================
           QUICK ACTIONS (Requirement 15)
-          [ Book Appointment ]
+          [ Live Queue Status ]
+          [ Public Screen (Hall) ]
           [ Take Queue Token ]
+          [ Book Appointment ]
           [ Track Application ]
-          [ View Services ]
       ========================================== */}
       <div>
         <h2 className="text-base font-bold text-slate-900 mb-3 font-heading">
           {language === "ta" ? "விரைவு சேவைகள்" : "Quick Actions"}
         </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           <Link
-            to="/citizen/appointments"
+            to="/citizen/queue"
             className="bg-white p-4 rounded-xl border border-slate-200 hover:border-[#0b3b60] hover:shadow-xs transition-all flex flex-col items-center text-center gap-2 group"
           >
-            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Calendar className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#0b3b60] flex items-center justify-center group-hover:scale-105 transition-transform relative">
+              <Clock className="w-5 h-5" />
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping" />
             </div>
             <span className="text-xs font-bold text-slate-900 group-hover:text-[#0b3b60]">
-              {language === "ta" ? "நியமனம் முன்பதிவு" : "Book Appointment"}
+              {language === "ta" ? "நேரலை வரிசை நிலை" : "Live Queue Status"}
+            </span>
+          </Link>
+
+          <Link
+            to="/display"
+            className="bg-white p-4 rounded-xl border border-slate-200 hover:border-amber-400 hover:shadow-xs transition-all flex flex-col items-center text-center gap-2 group"
+          >
+            <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <span className="text-lg">📺</span>
+            </div>
+            <span className="text-xs font-bold text-slate-900 group-hover:text-amber-700">
+              {language === "ta" ? "பொது காட்சிப்பலகை" : "Public Screen (Hall)"}
             </span>
           </Link>
 
@@ -440,6 +468,18 @@ const CitizenDashboard = () => {
           </Link>
 
           <Link
+            to="/citizen/appointments"
+            className="bg-white p-4 rounded-xl border border-slate-200 hover:border-[#0b3b60] hover:shadow-xs transition-all flex flex-col items-center text-center gap-2 group"
+          >
+            <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-bold text-slate-900 group-hover:text-[#0b3b60]">
+              {language === "ta" ? "நியமனம் முன்பதிவு" : "Book Appointment"}
+            </span>
+          </Link>
+
+          <Link
             to="/track"
             className="bg-white p-4 rounded-xl border border-slate-200 hover:border-[#0b3b60] hover:shadow-xs transition-all flex flex-col items-center text-center gap-2 group"
           >
@@ -448,18 +488,6 @@ const CitizenDashboard = () => {
             </div>
             <span className="text-xs font-bold text-slate-900 group-hover:text-[#0b3b60]">
               {language === "ta" ? "விண்ணப்பத்தை கண்காணிக்க" : "Track Application"}
-            </span>
-          </Link>
-
-          <Link
-            to="/services"
-            className="bg-white p-4 rounded-xl border border-slate-200 hover:border-[#0b3b60] hover:shadow-xs transition-all flex flex-col items-center text-center gap-2 group"
-          >
-            <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-700 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <span className="text-xs font-bold text-slate-900 group-hover:text-[#0b3b60]">
-              {language === "ta" ? "அரசு சேவைகள் பட்டியல்" : "View Services"}
             </span>
           </Link>
         </div>
