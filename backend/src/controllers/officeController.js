@@ -1,40 +1,41 @@
 const mongoose = require("mongoose");
 const GovernmentOffice = require("../models/GovernmentOffice");
 const Department = require("../models/Department");
+const Service = require("../models/Service");
 
 // =====================================================
 // GET ALL GOVERNMENT OFFICES (Public / Citizen / Admin)
 // =====================================================
 const getOffices = async (req, res) => {
   try {
-    const { all } = req.query;
+    const { all, district, taluk, state } = req.query;
     const filter = all === "true" ? {} : { isActive: true };
 
-    let offices = await GovernmentOffice.find(filter).sort({ name: 1 });
+    if (district) {
+      filter.district = new RegExp(`^${district}$`, "i");
+    }
+    if (taluk) {
+      filter.taluk = new RegExp(`^${taluk}$`, "i");
+    }
+    if (state) {
+      filter.state = new RegExp(`^${state}$`, "i");
+    }
 
-    // If no offices exist yet, auto-provision default Taluk Office for backward compatibility
-    if (offices.length === 0) {
-      const defaultOffice = await GovernmentOffice.create({
-        name: "Taluk Administrative Office",
-        code: "TALUK-HQ",
-        officeType: "taluk_office",
-        description: "Principal Taluk Revenue and Administrative Headquarters for Citizens",
-        address: "Taluk Office Complex, Kacheri Road",
-        district: "Erode",
-        taluk: "Perundurai",
-        contactPhone: "0424-2253100",
-        email: "tahsildar@talukoffice.gov.in",
-        openingTime: "09:30 AM",
-        closingTime: "05:30 PM",
-        isActive: true,
-      });
-      offices = [defaultOffice];
+    let offices = await GovernmentOffice.find(filter)
+      .populate("stateRef", "name code")
+      .populate("districtRef", "name code")
+      .populate("talukRef", "name code")
+      .sort({ name: 1 });
 
-      // Link any unassigned departments to default office
-      await Department.updateMany(
-        { office: null },
-        { office: defaultOffice._id }
-      );
+    // If no offices exist yet, auto-seed authoritative locations
+    if (offices.length === 0 && !district && !taluk) {
+      const seedAllLocations = require("../seedLocations");
+      await seedAllLocations(false);
+      offices = await GovernmentOffice.find(filter)
+        .populate("stateRef", "name code")
+        .populate("districtRef", "name code")
+        .populate("talukRef", "name code")
+        .sort({ name: 1 });
     }
 
     return res.status(200).json({
@@ -66,7 +67,11 @@ const getOfficeById = async (req, res) => {
       });
     }
 
-    const office = await GovernmentOffice.findById(id);
+    const office = await GovernmentOffice.findById(id)
+      .populate("stateRef", "name code")
+      .populate("districtRef", "name code")
+      .populate("talukRef", "name code");
+
     if (!office) {
       return res.status(404).json({
         success: false,
@@ -95,6 +100,67 @@ const getOfficeById = async (req, res) => {
 };
 
 // =====================================================
+// GET DEPARTMENTS FOR A SPECIFIC OFFICE
+// =====================================================
+const getOfficeDepartments = async (req, res) => {
+  try {
+    const { officeId } = req.params;
+
+    let filter = { isActive: true };
+    if (mongoose.Types.ObjectId.isValid(officeId)) {
+      filter.$or = [{ office: officeId }, { office: null }];
+    }
+
+    const departments = await Department.find(filter).sort({ name: 1 });
+
+    return res.status(200).json({
+      success: true,
+      count: departments.length,
+      data: departments,
+      departments,
+    });
+  } catch (error) {
+    console.error("Get Office Departments Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+// =====================================================
+// GET SERVICES FOR A SPECIFIC OFFICE
+// =====================================================
+const getOfficeServices = async (req, res) => {
+  try {
+    const { officeId } = req.params;
+
+    let filter = { isActive: true };
+    if (mongoose.Types.ObjectId.isValid(officeId)) {
+      filter.$or = [{ office: officeId }, { office: null }];
+    }
+
+    const services = await Service.find(filter)
+      .populate("department", "name code description")
+      .populate("office", "name code district taluk")
+      .sort({ name: 1 });
+
+    return res.status(200).json({
+      success: true,
+      count: services.length,
+      data: services,
+      services,
+    });
+  } catch (error) {
+    console.error("Get Office Services Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+// =====================================================
 // CREATE OFFICE (Admin)
 // =====================================================
 const createOffice = async (req, res) => {
@@ -105,8 +171,15 @@ const createOffice = async (req, res) => {
       officeType,
       description,
       address,
+      pincode,
+      latitude,
+      longitude,
+      state,
       district,
       taluk,
+      stateRef,
+      districtRef,
+      talukRef,
       contactPhone,
       email,
       openingTime,
@@ -135,8 +208,15 @@ const createOffice = async (req, res) => {
       officeType: officeType || "taluk_office",
       description: description ? description.trim() : "",
       address: address ? address.trim() : "",
-      district: district ? district.trim() : "Central",
-      taluk: taluk ? taluk.trim() : "Headquarters",
+      pincode: pincode ? pincode.trim() : "",
+      latitude: latitude || null,
+      longitude: longitude || null,
+      state: state ? state.trim() : "Tamil Nadu",
+      district: district ? district.trim() : "Coimbatore",
+      taluk: taluk ? taluk.trim() : "Pollachi",
+      stateRef: stateRef || null,
+      districtRef: districtRef || null,
+      talukRef: talukRef || null,
       contactPhone: contactPhone ? contactPhone.trim() : "",
       email: email ? email.trim() : "",
       openingTime: openingTime || "09:00 AM",
@@ -186,8 +266,15 @@ const updateOffice = async (req, res) => {
       "officeType",
       "description",
       "address",
+      "pincode",
+      "latitude",
+      "longitude",
+      "state",
       "district",
       "taluk",
+      "stateRef",
+      "districtRef",
+      "talukRef",
       "contactPhone",
       "email",
       "openingTime",
@@ -263,6 +350,8 @@ const deleteOffice = async (req, res) => {
 module.exports = {
   getOffices,
   getOfficeById,
+  getOfficeDepartments,
+  getOfficeServices,
   createOffice,
   updateOffice,
   deleteOffice,

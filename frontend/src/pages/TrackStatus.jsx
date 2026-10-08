@@ -267,6 +267,14 @@ const TrackStatus = () => {
               </div>
 
               <div className="space-y-1">
+                <span className="text-xs font-semibold text-slate-400">Government Jurisdiction</span>
+                <p className="text-sm font-bold text-gov-800">
+                  {result.data?.office?.name || (result.data?.taluk ? `${result.data.taluk} Taluk Office` : "Tamil Nadu Taluk Office")}
+                  {result.data?.district ? ` (${result.data.district})` : ""}
+                </p>
+              </div>
+
+              <div className="space-y-1">
                 <span className="text-xs font-semibold text-slate-400">Service</span>
                 <p className="text-sm font-bold text-slate-800">
                   {result.data?.service?.name || "Taluk Service"}

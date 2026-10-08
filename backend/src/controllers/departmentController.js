@@ -59,6 +59,7 @@ const getDepartments = async (req, res) => {
     res.status(200).json({
       success: true,
       count: departments.length,
+      data: departments,
       departments,
     });
   } catch (error) {

@@ -8,7 +8,10 @@ const server = http.createServer(app);
 const { initSocket } = require("./sockets/socket");
 initSocket(server);
 
-connectDB();
+connectDB().then(() => {
+  const { seedInitialLocations } = require("./controllers/locationController");
+  seedInitialLocations().catch((err) => console.error("Initial seed error:", err));
+});
 
 const PORT = process.env.PORT || 5000;
 

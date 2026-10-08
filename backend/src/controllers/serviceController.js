@@ -78,6 +78,7 @@ const getServices = async (req, res) => {
     res.status(200).json({
       success: true,
       count: services.length,
+      data: services,
       services,
     });
   } catch (error) {
@@ -111,6 +112,7 @@ const getServicesByDepartment = async (req, res) => {
     res.status(200).json({
       success: true,
       count: services.length,
+      data: services,
       services,
     });
   } catch (error) {

@@ -18,6 +18,26 @@ const applicationSchema = new mongoose.Schema(
       ref: "GovernmentOffice",
       default: null,
     },
+    state: {
+      type: String,
+      trim: true,
+      default: "Tamil Nadu",
+    },
+    district: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    taluk: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    governmentOffice: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     department: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Department",

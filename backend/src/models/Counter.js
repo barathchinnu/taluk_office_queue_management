@@ -5,7 +5,6 @@ const counterSchema = new mongoose.Schema(
     counterNumber: {
       type: Number,
       required: true,
-      unique: true,
       min: 1,
     },
 
@@ -53,5 +52,7 @@ const counterSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+counterSchema.index({ office: 1, counterNumber: 1 });
 
 module.exports = mongoose.model("Counter", counterSchema);

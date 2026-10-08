@@ -275,6 +275,15 @@ export const adminService = {
     const res = await api.get("/admin/appointments", { params });
     return res.data;
   },
+  // Statewide Hierarchy
+  getHierarchyOverview: async () => {
+    const res = await api.get("/admin/hierarchy-overview");
+    return res.data;
+  },
+  getHierarchyDrillDown: async (params) => {
+    const res = await api.get("/admin/drill-down", { params });
+    return res.data;
+  },
 };
 
 // ==========================================
@@ -303,12 +312,20 @@ export const notificationService = {
 // GOVERNMENT OFFICE SERVICES
 // ==========================================
 export const officeService = {
-  getAll: async (all = false) => {
-    const res = await api.get("/offices", { params: { all } });
+  getAll: async (all = false, filters = {}) => {
+    const res = await api.get("/offices", { params: { all, ...filters } });
     return res.data;
   },
   getById: async (id) => {
     const res = await api.get(`/offices/${id}`);
+    return res.data;
+  },
+  getDepartments: async (officeId) => {
+    const res = await api.get(`/offices/${officeId}/departments`);
+    return res.data;
+  },
+  getServices: async (officeId) => {
+    const res = await api.get(`/offices/${officeId}/services`);
     return res.data;
   },
   create: async (data) => {
@@ -321,6 +338,40 @@ export const officeService = {
   },
   delete: async (id) => {
     const res = await api.delete(`/offices/${id}`);
+    return res.data;
+  },
+};
+
+// ==========================================
+// LOCATION SERVICES (Tamil Nadu Statewide)
+// ==========================================
+export const locationService = {
+  getStates: async () => {
+    const res = await api.get("/locations/states");
+    return res.data;
+  },
+  getDistricts: async (stateId) => {
+    const res = await api.get(`/locations/districts/${stateId}`);
+    return res.data;
+  },
+  getTaluks: async (districtId) => {
+    const res = await api.get(`/locations/taluks/${districtId}`);
+    return res.data;
+  },
+  getOfficesByTaluk: async (talukId) => {
+    const res = await api.get(`/locations/offices/${talukId}`);
+    return res.data;
+  },
+  createState: async (data) => {
+    const res = await api.post("/locations/states", data);
+    return res.data;
+  },
+  createDistrict: async (data) => {
+    const res = await api.post("/locations/districts", data);
+    return res.data;
+  },
+  createTaluk: async (data) => {
+    const res = await api.post("/locations/taluks", data);
     return res.data;
   },
 };

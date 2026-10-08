@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   adminService,
   departmentService,
@@ -29,10 +30,20 @@ import {
   FileText,
   Landmark,
   MessageSquare,
+  MapPin,
 } from "lucide-react";
+import StatewideHierarchyView from "../../components/admin/StatewideHierarchyView";
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState("overview"); // overview, depts, services, officers, counters, appointments, offices, applications, feedback
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(urlTab || "overview"); // overview, depts, services, officers, counters, appointments, offices, applications, feedback
+
+  useEffect(() => {
+    if (urlTab && urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+  }, [urlTab]);
   const [statsData, setStatsData] = useState(null);
   const { t, tDeptName, tServiceName, language } = useLanguage();
   const [departments, setDepartments] = useState([]);
@@ -350,6 +361,11 @@ const AdminDashboard = () => {
             icon: Layers,
           },
           {
+            id: "hierarchy",
+            label: "Statewide Hierarchy (38 Districts)",
+            icon: MapPin,
+          },
+          {
             id: "depts",
             label: language === "ta" ? "துறைகள்" : "Departments",
             icon: Building2,
@@ -529,6 +545,9 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
+
+      {/* TAB: STATEWIDE HIERARCHY */}
+      {activeTab === "hierarchy" && <StatewideHierarchyView />}
 
       {/* TAB 2: DEPARTMENTS */}
       {activeTab === "depts" && (

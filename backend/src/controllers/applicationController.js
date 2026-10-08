@@ -6,6 +6,7 @@ const Service = require("../models/Service");
 const Officer = require("../models/Officer");
 const Token = require("../models/Token");
 const Appointment = require("../models/Appointment");
+const GovernmentOffice = require("../models/GovernmentOffice");
 const { notifyApplicationUpdate, createNotification } = require("../services/notificationService");
 
 // =====================================================
@@ -63,11 +64,29 @@ const createApplication = async (req, res) => {
       });
     }
 
-    // Generate unique application number
+    // Resolve Government Office and location
+    const targetOfficeId = office || deptDoc.office || null;
+    let officeDoc = null;
+    if (targetOfficeId && mongoose.Types.ObjectId.isValid(targetOfficeId)) {
+      officeDoc = await GovernmentOffice.findById(targetOfficeId);
+    }
+
+    // Meaningful Application Number: TN-{TALUK_CODE}-{DEPARTMENT_CODE}-{YEAR}-{SEQUENCE}
     const year = new Date().getFullYear();
-    const deptPrefix = deptDoc.code ? deptDoc.code.substring(0, 4).toUpperCase() : "GOV";
-    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
-    const applicationNumber = `${deptPrefix}-${year}-${randomSuffix}`;
+    let talukCode = "TLK";
+    if (officeDoc) {
+      if (officeDoc.taluk) {
+        talukCode = officeDoc.taluk.replace(/[^a-zA-Z]/g, "").substring(0, 3).toUpperCase();
+      } else if (officeDoc.code) {
+        const parts = officeDoc.code.split("-");
+        talukCode = parts.length > 2 ? parts[2].substring(0, 3).toUpperCase() : parts[parts.length - 1].substring(0, 3).toUpperCase();
+      }
+    } else if (req.body.taluk) {
+      talukCode = req.body.taluk.replace(/[^a-zA-Z]/g, "").substring(0, 3).toUpperCase();
+    }
+    const deptPrefix = deptDoc.code ? deptDoc.code.substring(0, 4).toUpperCase() : "REV";
+    const randomSuffix = String(Math.floor(100000 + Math.random() * 900000)).padStart(6, "0");
+    const applicationNumber = `TN-${talukCode}-${deptPrefix}-${year}-${randomSuffix}`;
 
     // Expected completion date based on service expectedProcessingDays
     const expectedDays = serviceDoc.expectedProcessingDays || 3;
@@ -77,7 +96,11 @@ const createApplication = async (req, res) => {
     const application = await Application.create({
       applicationNumber,
       citizen: citizenId,
-      office: office || deptDoc.office || null,
+      office: targetOfficeId,
+      state: officeDoc?.state || req.body.state || "Tamil Nadu",
+      district: officeDoc?.district || req.body.district || "",
+      taluk: officeDoc?.taluk || req.body.taluk || "",
+      governmentOffice: officeDoc?.name || req.body.governmentOffice || "",
       department,
       service,
       appointment: appointmentId || null,

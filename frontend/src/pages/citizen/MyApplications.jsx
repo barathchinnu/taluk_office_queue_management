@@ -165,9 +165,21 @@ const MyApplications = () => {
                     {app.service?.name || "Government Service"}
                   </h3>
 
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                  {/* Office / Jurisdiction Location Tag */}
+                  <div className="flex items-center gap-1.5 text-xs text-gov-800 bg-gov-50/70 border border-gov-200/70 px-2.5 py-1 rounded-lg w-fit">
+                    <Building className="w-3.5 h-3.5 text-gov-700 shrink-0" />
+                    <span className="font-semibold">
+                      {app.office?.name || (app.taluk ? `${app.taluk} Taluk Office` : "Taluk Administrative Office")}
+                    </span>
+                    <span className="text-slate-400">•</span>
+                    <span className="text-slate-600">
+                      {app.district ? `${app.district} District` : "Tamil Nadu"}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-1">
                     <span>
-                      Dept: <strong>{app.department?.name || "General"}</strong>
+                      Dept: <strong>{app.department?.name || "Revenue"}</strong>
                     </span>
                     <span>
                       Submitted: <strong>{new Date(app.createdAt).toLocaleDateString()}</strong>

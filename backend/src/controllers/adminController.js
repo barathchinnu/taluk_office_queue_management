@@ -384,10 +384,152 @@ const deleteOfficer = async (req, res) => {
   }
 };
 
+// =====================================================
+// STATEWIDE HIERARCHY OVERVIEW & DRILL-DOWN (Admin)
+// =====================================================
+const State = require("../models/State");
+const District = require("../models/District");
+const Taluk = require("../models/Taluk");
+const GovernmentOffice = require("../models/GovernmentOffice");
+const Application = require("../models/Application");
+
+const getHierarchyOverview = async (req, res) => {
+  try {
+    const { startOfDay, endOfDay } = getDayBounds();
+
+    const [
+      totalDistricts,
+      totalTaluks,
+      totalOffices,
+      totalDepartments,
+      totalOfficers,
+      totalApplications,
+      todayTokens,
+    ] = await Promise.all([
+      District.countDocuments({ isActive: true }),
+      Taluk.countDocuments({ isActive: true }),
+      GovernmentOffice.countDocuments({ isActive: true }),
+      Department.countDocuments({ isActive: true }),
+      Officer.countDocuments({ isActive: true }),
+      Application.countDocuments(),
+      Token.countDocuments({ queueDate: { $gte: startOfDay, $lte: endOfDay } }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      state: "Tamil Nadu",
+      counts: {
+        districts: totalDistricts,
+        taluks: totalTaluks,
+        offices: totalOffices,
+        departments: totalDepartments,
+        officers: totalOfficers,
+        applications: totalApplications,
+        todayTokens,
+      },
+    });
+  } catch (error) {
+    console.error("Hierarchy Overview Error:", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
+const getHierarchyDrillDown = async (req, res) => {
+  try {
+    const { districtId, talukId, officeId, departmentId } = req.query;
+    const { startOfDay, endOfDay } = getDayBounds();
+
+    // Level 4: Office + Department Queue
+    if (officeId && departmentId) {
+      const [office, dept, queue, counters, officers] = await Promise.all([
+        GovernmentOffice.findById(officeId),
+        Department.findById(departmentId),
+        Token.find({
+          office: officeId,
+          department: departmentId,
+          queueDate: { $gte: startOfDay, $lte: endOfDay },
+          status: { $in: ["waiting", "called", "serving"] },
+        })
+          .populate("citizen", "fullName phone")
+          .populate("service", "name")
+          .sort({ tokenNumber: 1 }),
+        Counter.find({ office: officeId, department: departmentId }).populate("officer"),
+        Officer.find({ office: officeId, department: departmentId }).populate("user", "fullName email"),
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        level: "queue",
+        office,
+        department: dept,
+        queue,
+        counters,
+        officers,
+      });
+    }
+
+    // Level 3: Taluk Office Details
+    if (officeId) {
+      const office = await GovernmentOffice.findById(officeId);
+      const [depts, services, counters, officers, todayTokensCount, activeAppsCount] = await Promise.all([
+        Department.find({ isActive: true }),
+        Service.find({ isActive: true }),
+        Counter.find({ office: officeId }).populate("officer department"),
+        Officer.find({ office: officeId }).populate("user department"),
+        Token.countDocuments({ office: officeId, queueDate: { $gte: startOfDay, $lte: endOfDay } }),
+        Application.countDocuments({ office: officeId }),
+      ]);
+
+      return res.status(200).json({
+        success: true,
+        level: "office",
+        office,
+        departments: depts,
+        services,
+        counters,
+        officers,
+        todayTokensCount,
+        activeAppsCount,
+      });
+    }
+
+    // Level 2: Taluks under District
+    if (districtId) {
+      const district = await District.findById(districtId);
+      const taluks = await Taluk.find({ district: districtId, isActive: true }).sort({ name: 1 });
+      const offices = await GovernmentOffice.find({ districtRef: districtId, isActive: true }).sort({ name: 1 });
+
+      return res.status(200).json({
+        success: true,
+        level: "taluks",
+        district,
+        taluks,
+        offices,
+      });
+    }
+
+    // Level 1: All 38 Districts in Tamil Nadu
+    const state = await State.findOne({ code: "TN" });
+    const districts = await District.find({ isActive: true }).sort({ name: 1 });
+
+    return res.status(200).json({
+      success: true,
+      level: "districts",
+      state: state || { name: "Tamil Nadu", code: "TN" },
+      districts,
+    });
+  } catch (error) {
+    console.error("Hierarchy Drill-down Error:", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   getDashboardStats,
   getOfficers,
   createOfficerWithUser,
   updateOfficer,
   deleteOfficer,
+  getHierarchyOverview,
+  getHierarchyDrillDown,
 };

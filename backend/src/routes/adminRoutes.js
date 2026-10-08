@@ -7,6 +7,8 @@ const {
   createOfficerWithUser,
   updateOfficer,
   deleteOfficer,
+  getHierarchyOverview,
+  getHierarchyDrillDown,
 } = require("../controllers/adminController");
 
 const {
@@ -41,6 +43,8 @@ router.use(protect, authorize("admin"));
 
 // Dashboard
 router.get("/dashboard", getDashboardStats);
+router.get("/hierarchy-overview", getHierarchyOverview);
+router.get("/drill-down", getHierarchyDrillDown);
 
 // Officer Management
 router.get("/officers", getOfficers);

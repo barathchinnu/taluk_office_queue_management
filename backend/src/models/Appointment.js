@@ -49,6 +49,30 @@ const appointmentSchema = new mongoose.Schema(
       default: null,
     },
 
+    state: {
+      type: String,
+      trim: true,
+      default: "Tamil Nadu",
+    },
+
+    district: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    taluk: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
+    governmentOffice: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     priorityType: {
       type: String,
       set: (v) => {

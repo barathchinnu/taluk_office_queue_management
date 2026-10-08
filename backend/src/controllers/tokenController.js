@@ -122,13 +122,20 @@ const generateToken = async (req, res) => {
       });
     }
 
-    // Check if citizen already has an active token today for this department
-    const existingActiveToken = await Token.findOne({
+    const resolvedOfficeId = req.body.office || (linkedAppointment ? linkedAppointment.office : null) || department.office || null;
+
+    // Check if citizen already has an active token today for this department in this office
+    const existingActiveFilter = {
       citizen: citizenId,
       department: department._id,
       queueDate: { $gte: startOfDay, $lte: endOfDay },
       status: { $in: ["waiting", "called", "serving"] },
-    });
+    };
+    if (resolvedOfficeId && mongoose.Types.ObjectId.isValid(resolvedOfficeId)) {
+      existingActiveFilter.office = resolvedOfficeId;
+    }
+
+    const existingActiveToken = await Token.findOne(existingActiveFilter);
 
     if (existingActiveToken) {
       return res.status(400).json({
@@ -138,11 +145,16 @@ const generateToken = async (req, res) => {
       });
     }
 
-    // Calculate next token number for this department today
-    const lastToken = await Token.findOne({
+    // Calculate next token number for this department today scoped to this taluk office
+    const tokenScope = {
       department: department._id,
       queueDate: { $gte: startOfDay, $lte: endOfDay },
-    }).sort({ tokenNumber: -1 });
+    };
+    if (resolvedOfficeId && mongoose.Types.ObjectId.isValid(resolvedOfficeId)) {
+      tokenScope.office = resolvedOfficeId;
+    }
+
+    const lastToken = await Token.findOne(tokenScope).sort({ tokenNumber: -1 });
 
     const nextTokenNumber = lastToken ? lastToken.tokenNumber + 1 : 1;
 
@@ -167,7 +179,7 @@ const generateToken = async (req, res) => {
       citizen: citizenId,
       department: department._id,
       service: service._id,
-      office: req.body.office || department.office || null,
+      office: resolvedOfficeId,
       appointment: linkedAppointment ? linkedAppointment._id : null,
       priorityType: pType,
       priorityVerified: isPriorityVerified,
@@ -287,6 +299,8 @@ const getMyToken = async (req, res) => {
 const getQueue = async (req, res) => {
   try {
     const { departmentId } = req.params;
+    const { office, officeId } = req.query;
+    const resolvedOffice = office || officeId;
 
     if (!departmentId || !mongoose.Types.ObjectId.isValid(departmentId)) {
       return res.status(400).json({
@@ -297,11 +311,17 @@ const getQueue = async (req, res) => {
 
     const { startOfDay, endOfDay } = getDayBounds();
 
-    const queue = await Token.find({
+    const queueFilter = {
       department: departmentId,
       queueDate: { $gte: startOfDay, $lte: endOfDay },
       status: { $in: ["waiting", "called", "serving"] },
-    })
+    };
+
+    if (resolvedOffice && mongoose.Types.ObjectId.isValid(resolvedOffice)) {
+      queueFilter.office = resolvedOffice;
+    }
+
+    const queue = await Token.find(queueFilter)
       .populate("citizen", "fullName phone")
       .populate("service", "name averageServiceTime")
       .populate("counter", "counterNumber name")
@@ -335,6 +355,8 @@ const getQueue = async (req, res) => {
 const getPublicQueue = async (req, res) => {
   try {
     const { departmentId } = req.params;
+    const { office, officeId } = req.query;
+    const resolvedOffice = office || officeId;
     const isAll = !departmentId || departmentId === "all";
 
     const { startOfDay, endOfDay } = getDayBounds();
@@ -365,6 +387,9 @@ const getPublicQueue = async (req, res) => {
     if (!isAll) {
       counterFilter.department = departmentId;
     }
+    if (resolvedOffice && mongoose.Types.ObjectId.isValid(resolvedOffice)) {
+      counterFilter.$or = [{ office: resolvedOffice }, { office: null }];
+    }
 
     const allCounters = await Counter.find(counterFilter)
       .populate("department", "name code")
@@ -375,11 +400,16 @@ const getPublicQueue = async (req, res) => {
       .sort({ counterNumber: 1 });
 
     // 2. Fetch active tokens today
-    const tokens = await Token.find({
+    const tokenFilter = {
       ...deptFilter,
       queueDate: { $gte: startOfDay, $lte: endOfDay },
       status: { $in: ["waiting", "called", "serving"] },
-    })
+    };
+    if (resolvedOffice && mongoose.Types.ObjectId.isValid(resolvedOffice)) {
+      tokenFilter.office = resolvedOffice;
+    }
+
+    const tokens = await Token.find(tokenFilter)
       .select("tokenNumber tokenDisplay status counter service department calledAt servingAt createdAt")
       .populate("counter", "counterNumber name")
       .populate("service", "name averageServiceTime")
@@ -527,12 +557,17 @@ const callNextToken = async (req, res) => {
       });
     }
 
-    // 4. Find first waiting token for officer's department (priority verified tokens first, then FIFO)
-    const nextToken = await Token.findOne({
+    // 4. Find first waiting token for officer's department and office (priority verified tokens first, then FIFO)
+    const nextTokenFilter = {
       department: officer.department,
       status: "waiting",
       queueDate: { $gte: startOfDay, $lte: endOfDay },
-    }).sort({ priorityVerified: -1, tokenNumber: 1 });
+    };
+    if (officer.office) {
+      nextTokenFilter.office = officer.office;
+    }
+
+    const nextToken = await Token.findOne(nextTokenFilter).sort({ priorityVerified: -1, tokenNumber: 1 });
 
     if (!nextToken) {
       return res.status(200).json({

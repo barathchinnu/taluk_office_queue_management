@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { departmentService, serviceService, appointmentService } from "../../services/api";
 import StatusBadge from "../../components/StatusBadge";
 import { useLanguage } from "../../context/LanguageContext";
+import { useLocation as useGeoLocation } from "../../context/LocationContext";
 import {
   Calendar,
   Clock,
@@ -14,10 +15,17 @@ import {
   XCircle,
   ArrowRight,
   ArrowLeft,
+  MapPin,
 } from "lucide-react";
 
 const MyAppointments = () => {
-  const [activeTab, setActiveTab] = useState("my"); // "my" or "book"
+  const { selectedOfficeId, officeName } = useGeoLocation();
+  const [searchParams] = useSearchParams();
+  const shouldBook = searchParams.get("book") === "true";
+  const urlServiceId = searchParams.get("serviceId") || searchParams.get("service");
+  const urlDeptId = searchParams.get("deptId") || searchParams.get("department") || searchParams.get("departmentId");
+
+  const [activeTab, setActiveTab] = useState(shouldBook || urlServiceId ? "book" : "my");
   const [appointments, setAppointments] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [services, setServices] = useState([]);
@@ -42,7 +50,7 @@ const MyAppointments = () => {
       setLoading(true);
       const res = await appointmentService.getMyAppointments();
       if (res.success) {
-        setAppointments(res.appointments);
+        setAppointments(res.appointments || res.data || []);
       }
     } catch (err) {
       console.error("Error fetching appointments:", err);
@@ -54,12 +62,45 @@ const MyAppointments = () => {
   useEffect(() => {
     fetchAppointments();
 
-    departmentService.getAll().then((data) => {
-      if (data.success) {
-        setDepartments(data.departments);
+    const initDepts = async () => {
+      try {
+        const data = await departmentService.getAll();
+        const depts = data.departments || data.data || [];
+        setDepartments(depts);
+
+        if (urlDeptId || urlServiceId) {
+          setActiveTab("book");
+          let targetDeptId = urlDeptId;
+
+          if (!targetDeptId && urlServiceId) {
+            const allSrvRes = await serviceService.getAll();
+            const allSrvs = allSrvRes.services || allSrvRes.data || [];
+            const foundSrv = allSrvs.find((s) => s._id === urlServiceId);
+            if (foundSrv) {
+              targetDeptId =
+                typeof foundSrv.department === "object"
+                  ? foundSrv.department?._id
+                  : foundSrv.department;
+            }
+          }
+
+          if (targetDeptId) {
+            setSelectedDept(targetDeptId);
+            const srvData = await serviceService.getByDepartment(targetDeptId);
+            const srvs = srvData.services || srvData.data || [];
+            setServices(srvs);
+            if (urlServiceId) {
+              setSelectedService(urlServiceId);
+            }
+          }
+        }
+      } catch (err) {
+        console.error(err);
       }
-    });
-  }, []);
+    };
+
+    initDepts();
+  }, [urlDeptId, urlServiceId, shouldBook]);
 
   const handleDeptChange = async (deptId) => {
     setSelectedDept(deptId);
@@ -98,12 +139,16 @@ const MyAppointments = () => {
         appointmentDate,
         appointmentTime,
         purpose,
+        office: selectedOfficeId || undefined,
       });
 
       if (res.success) {
         setMessage({
           type: "success",
-          text: language === "ta" ? "முன்பதிவு வெற்றிகரமாக முடிந்தது!" : "Appointment booked successfully!",
+          text:
+            language === "ta"
+              ? `${officeName} அலுவலகத்தில் உங்கள் முன்பதிவு உறுதிசெய்யப்பட்டது.`
+              : `Your appointment is confirmed at ${officeName}.`,
         });
         setActiveTab("my");
         fetchAppointments();
@@ -274,6 +319,11 @@ const MyAppointments = () => {
           </div>
 
           <form onSubmit={handleBookAppointment} className="space-y-4">
+            <div className="flex items-center gap-2 p-3 bg-gov-50/70 border border-gov-200 rounded-xl text-xs text-gov-800">
+              <MapPin className="w-4 h-4 text-gov-700 shrink-0" />
+              <span>Target Jurisdiction: <strong>{officeName}</strong></span>
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">
                 {t("appointments", "selectDept")}

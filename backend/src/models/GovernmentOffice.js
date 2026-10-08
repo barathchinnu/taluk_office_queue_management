@@ -46,15 +46,48 @@ const governmentOfficeSchema = new mongoose.Schema(
       trim: true,
       default: "",
     },
+    pincode: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    latitude: {
+      type: Number,
+      default: null,
+    },
+    longitude: {
+      type: Number,
+      default: null,
+    },
+    state: {
+      type: String,
+      trim: true,
+      default: "Tamil Nadu",
+    },
     district: {
       type: String,
       trim: true,
-      default: "Central",
+      default: "Coimbatore",
     },
     taluk: {
       type: String,
       trim: true,
-      default: "Headquarters",
+      default: "Pollachi",
+    },
+    stateRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "State",
+      default: null,
+    },
+    districtRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "District",
+      default: null,
+    },
+    talukRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Taluk",
+      default: null,
     },
     contactPhone: {
       type: String,
@@ -78,14 +111,13 @@ const governmentOfficeSchema = new mongoose.Schema(
       default: "05:00 PM",
     },
     workingDays: {
-      type: [String],
+      type: mongoose.Schema.Types.Mixed,
       default: [
         "Monday",
         "Tuesday",
         "Wednesday",
         "Thursday",
         "Friday",
-        "Saturday",
       ],
     },
     isActive: {
@@ -99,5 +131,7 @@ const governmentOfficeSchema = new mongoose.Schema(
 );
 
 governmentOfficeSchema.index({ district: 1, taluk: 1 });
+governmentOfficeSchema.index({ talukRef: 1 });
+governmentOfficeSchema.index({ districtRef: 1 });
 
 module.exports = mongoose.model("GovernmentOffice", governmentOfficeSchema);

@@ -15,10 +15,6 @@ const getServiceCatalog = async (req, res) => {
       filter.department = department;
     }
 
-    if (office && mongoose.Types.ObjectId.isValid(office)) {
-      filter.office = office;
-    }
-
     if (search) {
       filter.$or = [
         { name: { $regex: search, $options: "i" } },
@@ -27,7 +23,8 @@ const getServiceCatalog = async (req, res) => {
       ];
     }
 
-    const services = await Service.find(filter)
+    // Services in Tamil Nadu e-Seva are statewide standard services available across taluk offices
+    let services = await Service.find(filter)
       .populate("department", "name code description")
       .populate("office", "name code district taluk")
       .sort({ department: 1, name: 1 });

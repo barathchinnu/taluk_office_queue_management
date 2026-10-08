@@ -118,11 +118,22 @@ const createAppointment = async (req, res) => {
     const validPriorities = ["normal", "senior_citizen", "differently_abled", "pregnant_woman", "emergency"];
     const pType = validPriorities.includes(priorityType) ? priorityType : "normal";
 
+    const targetOfficeId = office || departmentExists.office || null;
+    let officeDoc = null;
+    if (targetOfficeId && mongoose.Types.ObjectId.isValid(targetOfficeId)) {
+      const GovernmentOffice = require("../models/GovernmentOffice");
+      officeDoc = await GovernmentOffice.findById(targetOfficeId);
+    }
+
     const appointment = await Appointment.create({
       citizen: citizenId,
       department,
       service,
-      office: office || departmentExists.office || null,
+      office: targetOfficeId,
+      state: officeDoc?.state || "Tamil Nadu",
+      district: officeDoc?.district || "",
+      taluk: officeDoc?.taluk || "",
+      governmentOffice: officeDoc?.name || "",
       priorityType: pType,
       appointmentDate: selectedDate,
       appointmentTime: appointmentTime || "10:00 AM",
@@ -134,7 +145,8 @@ const createAppointment = async (req, res) => {
     const populatedAppointment = await Appointment.findById(appointment._id)
       .populate("citizen", "fullName email phone")
       .populate("department", "name code")
-      .populate("service", "name averageServiceTime");
+      .populate("service", "name averageServiceTime")
+      .populate("office", "name code state district taluk address");
 
     // Trigger notification to citizen
     notifyAppointmentConfirmed(populatedAppointment).catch(() => {});
@@ -163,6 +175,7 @@ const getMyAppointments = async (req, res) => {
     const appointments = await Appointment.find({ citizen: userId })
       .populate("department", "name code")
       .populate("service", "name averageServiceTime")
+      .populate("office", "name code state district taluk address")
       .sort({ appointmentDate: -1 });
 
     res.status(200).json({

@@ -1,9 +1,13 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { LanguageProvider } from "./context/LanguageContext";
+import { LocationProvider } from "./context/LocationContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
+import CitizenSidebar from "./components/CitizenSidebar";
+import LocationHeader from "./components/LocationHeader";
+import LocationSelectorModal from "./components/LocationSelectorModal";
 import Footer from "./components/Footer";
 
 // Pages
@@ -31,17 +35,70 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 
 const Layout = ({ children }) => {
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
   const isDisplayScreen = location.pathname.startsWith("/display");
+
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("sgqs_sidebar_collapsed") === "true";
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const handleToggleCollapse = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("sgqs_sidebar_collapsed", String(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [location.pathname]);
 
   if (isDisplayScreen) {
     return <main>{children}</main>;
   }
 
+  if (isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex">
+        {/* Left Sidebar */}
+        <CitizenSidebar
+          mobileOpen={mobileSidebarOpen}
+          onCloseMobile={() => setMobileSidebarOpen(false)}
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={handleToggleCollapse}
+        />
+
+        {/* Content Area */}
+        <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
+          <Navbar onToggleMobileSidebar={() => setMobileSidebarOpen((prev) => !prev)} />
+          <LocationHeader />
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+            {children}
+          </main>
+          <Footer />
+        </div>
+
+        {/* Global Location Selection Modal */}
+        <LocationSelectorModal />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
-      <Navbar />
+      <Navbar onToggleMobileSidebar={() => setMobileSidebarOpen((prev) => !prev)} />
+      <LocationHeader />
       <main className="flex-1">{children}</main>
       <Footer />
+      <LocationSelectorModal />
     </div>
   );
 };
@@ -50,8 +107,9 @@ function App() {
   return (
     <AuthProvider>
       <LanguageProvider>
-        <BrowserRouter>
-          <Layout>
+        <LocationProvider>
+          <BrowserRouter>
+            <Layout>
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
@@ -155,6 +213,7 @@ function App() {
             </Routes>
           </Layout>
         </BrowserRouter>
+        </LocationProvider>
       </LanguageProvider>
     </AuthProvider>
   );

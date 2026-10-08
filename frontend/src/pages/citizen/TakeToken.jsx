@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { departmentService, serviceService, tokenService } from "../../services/api";
 import { useLanguage } from "../../context/LanguageContext";
+import { useLocation as useGeoLocation } from "../../context/LocationContext";
 import StatusBadge from "../../components/StatusBadge";
 import {
   Building2,
@@ -13,10 +14,16 @@ import {
   ArrowLeft,
   Printer,
   Sparkles,
+  MapPin,
 } from "lucide-react";
 
 const TakeToken = () => {
   const { language, t, tDeptName, tDeptDesc, tServiceName, tStatus } = useLanguage();
+  const { selectedOfficeId, officeName } = useGeoLocation();
+  const [searchParams] = useSearchParams();
+  const urlServiceId = searchParams.get("serviceId") || searchParams.get("service");
+  const urlDeptId = searchParams.get("deptId") || searchParams.get("department") || searchParams.get("departmentId");
+
   const [departments, setDepartments] = useState([]);
   const [services, setServices] = useState([]);
   const [selectedDept, setSelectedDept] = useState(null);
@@ -31,22 +38,64 @@ const TakeToken = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    departmentService
-      .getAll()
-      .then((data) => {
-        if (data.success) {
-          setDepartments(data.departments);
-          if (data.departments.length > 0) {
-            handleSelectDepartment(data.departments[0]);
+    const init = async () => {
+      try {
+        setLoadingDepts(true);
+        const data = await departmentService.getAll();
+        const depts = data.departments || data.data || [];
+        setDepartments(depts);
+
+        if (depts.length > 0) {
+          let targetDept = null;
+          let targetServiceId = urlServiceId;
+
+          if (urlDeptId) {
+            targetDept = depts.find((d) => d._id === urlDeptId);
+          }
+
+          if (!targetDept && targetServiceId) {
+            try {
+              const allSrvRes = await serviceService.getAll();
+              const allServices = allSrvRes.services || allSrvRes.data || [];
+              const foundSrv = allServices.find((s) => s._id === targetServiceId);
+              if (foundSrv) {
+                const srvDeptId =
+                  typeof foundSrv.department === "object"
+                    ? foundSrv.department?._id
+                    : foundSrv.department;
+                targetDept = depts.find((d) => d._id === srvDeptId);
+              }
+            } catch (e) {
+              console.error(e);
+            }
+          }
+
+          const activeDept = targetDept || depts[0];
+          setSelectedDept(activeDept);
+
+          setLoadingServices(true);
+          const srvData = await serviceService.getByDepartment(activeDept._id);
+          const srvList = srvData.services || srvData.data || [];
+          setServices(srvList);
+
+          if (targetServiceId) {
+            const foundTargetSrv = srvList.find((s) => s._id === targetServiceId);
+            setSelectedService(foundTargetSrv || srvList[0] || null);
+          } else if (srvList.length > 0) {
+            setSelectedService(srvList[0]);
           }
         }
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Error loading departments:", err);
         setError("Failed to load departments. Please try again.");
-      })
-      .finally(() => setLoadingDepts(false));
-  }, []);
+      } finally {
+        setLoadingDepts(false);
+        setLoadingServices(false);
+      }
+    };
+
+    init();
+  }, [urlDeptId, urlServiceId]);
 
   const handleSelectDepartment = async (dept) => {
     setSelectedDept(dept);
@@ -56,11 +105,10 @@ const TakeToken = () => {
     try {
       setLoadingServices(true);
       const data = await serviceService.getByDepartment(dept._id);
-      if (data.success) {
-        setServices(data.services);
-        if (data.services.length > 0) {
-          setSelectedService(data.services[0]);
-        }
+      const srvList = data.services || data.data || [];
+      setServices(srvList);
+      if (srvList.length > 0) {
+        setSelectedService(srvList[0]);
       }
     } catch (err) {
       console.error("Error loading services:", err);
@@ -79,7 +127,12 @@ const TakeToken = () => {
     try {
       setGenerating(true);
       setError("");
-      const res = await tokenService.generateToken(selectedDept._id, selectedService._id);
+      const res = await tokenService.generateToken(
+        selectedDept._id,
+        selectedService._id,
+        "NORMAL",
+        selectedOfficeId
+      );
 
       if (res.success && res.token) {
         setGeneratedToken(res.token);
@@ -113,6 +166,10 @@ const TakeToken = () => {
           <p className="text-xs text-slate-500">
             {t("takeToken", "pageSubtitle")}
           </p>
+          <div className="flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold w-fit">
+            <MapPin className="w-3.5 h-3.5 text-amber-600" />
+            <span>Target Office: {officeName}</span>
+          </div>
         </div>
 
         <Link

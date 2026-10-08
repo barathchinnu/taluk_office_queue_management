@@ -6,7 +6,7 @@ const Officer = require("../models/Officer");
 // Create Counter
 const createCounter = async (req, res) => {
   try {
-    const { counterNumber, name, department, officer } = req.body;
+    const { counterNumber, name, department, officer, office } = req.body;
 
     if (!counterNumber || !name || !department) {
       return res.status(400).json({
@@ -30,11 +30,15 @@ const createCounter = async (req, res) => {
       });
     }
 
-    const existingCounter = await Counter.findOne({ counterNumber });
+    const targetOffice = office || (req.user && req.user.office) || null;
+    const existingCounter = await Counter.findOne({
+      counterNumber,
+      ...(targetOffice ? { office: targetOffice } : {}),
+    });
     if (existingCounter) {
       return res.status(400).json({
         success: false,
-        message: `Counter number ${counterNumber} already exists`,
+        message: `Counter number ${counterNumber} already exists in this office`,
       });
     }
 
@@ -82,6 +86,7 @@ const createCounter = async (req, res) => {
       counterNumber,
       name: name.trim(),
       department,
+      office: targetOffice,
       officer: assignedOfficerId,
       status: assignedOfficerId ? "available" : "closed",
       isAvailable: true,
@@ -115,7 +120,7 @@ const createCounter = async (req, res) => {
 // Get All Counters
 const getCounters = async (req, res) => {
   try {
-    const { department, includeInactive } = req.query;
+    const { department, includeInactive, office } = req.query;
     const filter = {};
 
     if (includeInactive !== "true") {
@@ -124,6 +129,10 @@ const getCounters = async (req, res) => {
 
     if (department && mongoose.Types.ObjectId.isValid(department)) {
       filter.department = department;
+    }
+
+    if (office && mongoose.Types.ObjectId.isValid(office)) {
+      filter.office = office;
     }
 
     const counters = await Counter.find(filter)

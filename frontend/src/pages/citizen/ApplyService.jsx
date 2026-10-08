@@ -7,6 +7,7 @@ import {
   applicationService,
 } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { useLocation as useGeoLocation } from "../../context/LocationContext";
 import {
   Building2,
   FileText,
@@ -23,6 +24,7 @@ import {
 
 const ApplyService = () => {
   const { user, isAuthenticated } = useAuth();
+  const { selectedOfficeId, selectedLocation } = useGeoLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectedServiceId = searchParams.get("serviceId");
@@ -31,7 +33,7 @@ const ApplyService = () => {
   const [departments, setDepartments] = useState([]);
   const [services, setServices] = useState([]);
 
-  const [selectedOffice, setSelectedOffice] = useState("");
+  const [selectedOffice, setSelectedOffice] = useState(selectedOfficeId || "");
   const [selectedDept, setSelectedDept] = useState("");
   const [selectedService, setSelectedService] = useState(preselectedServiceId || "");
   const [activeServiceObj, setActiveServiceObj] = useState(null);
@@ -59,7 +61,11 @@ const ApplyService = () => {
 
         if (offRes.success && offRes.data?.length > 0) {
           setOffices(offRes.data);
-          setSelectedOffice(offRes.data[0]._id);
+          if (selectedOfficeId) {
+            setSelectedOffice(selectedOfficeId);
+          } else {
+            setSelectedOffice(offRes.data[0]._id);
+          }
         }
 
         if (deptRes.success) {
