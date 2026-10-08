@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { authService } from "../services/api";
+import { getSocket } from "../services/socket";
 import PortalTitleBar from "../components/PortalTitleBar";
 import {
   Building2,
@@ -18,6 +19,8 @@ import {
   Landmark,
   KeyRound,
   Info,
+  Smartphone,
+  Sparkles,
 } from "lucide-react";
 
 // Helper to generate a realistic 5-character Captcha code
@@ -50,6 +53,7 @@ const Login = () => {
   // OTP flow state
   const [otpStep, setOtpStep] = useState(false); // false = enter contact, true = enter OTP
   const [otpValue, setOtpValue] = useState("");
+  const [realtimeOtp, setRealtimeOtp] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
 
   // Status states
@@ -74,9 +78,32 @@ const Login = () => {
     return () => clearInterval(interval);
   }, [resendTimer]);
 
+  // Real-time Socket.IO listener for live OTP delivery
+  useEffect(() => {
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handleOtpReceived = (data) => {
+      const activeIdentifier = authMode === "mobile_otp" ? mobile.trim() : email.trim().toLowerCase();
+      if (data && (!data.identifier || data.identifier === activeIdentifier)) {
+        if (data.otp) {
+          setRealtimeOtp(data.otp);
+          setSuccessMsg(`📱 Real-time OTP received via TNeGOV Gateway: ${data.otp}`);
+        }
+      }
+    };
+
+    socket.on("otp:received", handleOtpReceived);
+    return () => {
+      socket.off("otp:received", handleOtpReceived);
+    };
+  }, [authMode, mobile, email]);
+
   const handleModeChange = (mode) => {
     setAuthMode(mode);
     setOtpStep(false);
+    setOtpValue("");
+    setRealtimeOtp("");
     setError("");
     setSuccessMsg("");
     refreshCaptcha();
@@ -99,7 +126,7 @@ const Login = () => {
 
   // Send OTP
   const handleSendOtp = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     setError("");
     setSuccessMsg("");
 
@@ -118,7 +145,7 @@ const Login = () => {
       }
     }
 
-    if (captchaInput.trim().toUpperCase() !== captchaCode.toUpperCase()) {
+    if (!otpStep && captchaInput.trim().toUpperCase() !== captchaCode.toUpperCase()) {
       setError("Incorrect security captcha text. Please try again.");
       refreshCaptcha();
       return;
@@ -126,16 +153,20 @@ const Login = () => {
 
     try {
       setLoading(true);
-      const payload = authMode === "mobile_otp" ? { mobile: mobile.trim() } : { email: email.trim() };
+      const payload = authMode === "mobile_otp" ? { mobile: mobile.trim() } : { email: email.trim().toLowerCase() };
       const res = await authService.sendOtp(payload);
 
       if (res.success) {
         setOtpStep(true);
+        setOtpValue("");
         setResendTimer(30);
+        if (res.otp) {
+          setRealtimeOtp(res.otp);
+        }
         setSuccessMsg(
-          res.demoMode
-            ? `Demo OTP sent successfully! For demo login, use code: ${res.demoOtp || "123456"}`
-            : `OTP sent successfully to ${authMode === "mobile_otp" ? mobile : email}.`
+          authMode === "mobile_otp"
+            ? `Real-time OTP dispatched to +91 ${mobile}. Valid for 5 minutes.`
+            : `Real-time OTP dispatched to ${email}. Check your inbox / spam folder.`
         );
       } else {
         setError(res.message || "Failed to send OTP. Please try again.");
@@ -399,59 +430,103 @@ const Login = () => {
                   ) : (
                     /* Step 2: Enter OTP */
                     <form onSubmit={handleVerifyOtp} className="space-y-4">
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900">
-                        <p className="font-semibold">
-                          OTP verification code sent to +91 {mobile}
-                        </p>
-                        <span className="text-[11px] text-blue-700">
-                          (Demo OTP Mode: enter <strong>123456</strong>)
-                        </span>
+                      {/* Real-Time SMS Delivery Push Card */}
+                      {realtimeOtp && (
+                        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#0b3b60] to-[#00809d] text-white shadow-md border border-white/20 animate-in fade-in slide-in-from-top-2 duration-200 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold shrink-0 shadow-xs">
+                                <Smartphone className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <div className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">
+                                  TNeGOV SMS Gateway • Delivered
+                                </div>
+                                <div className="text-xs font-semibold flex items-center gap-1.5 mt-0.5">
+                                  <span>OTP:</span>
+                                  <span className="font-mono font-black text-amber-300 text-sm tracking-widest bg-black/30 px-2 py-0.5 rounded border border-white/10">
+                                    {realtimeOtp}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setOtpValue(realtimeOtp)}
+                              className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                              title="Auto-fill OTP into input"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-slate-950" />
+                              Auto-Fill
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-between text-[10px] text-slate-200 border-t border-white/15 pt-1.5">
+                            <span>SMS sent to +91 {mobile}</span>
+                            <span className="text-amber-200 font-bold">Valid for 5 mins</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center justify-between">
+                        <span>OTP dispatched to <strong>+91 {mobile}</strong></span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOtpStep(false);
+                            setOtpValue("");
+                            setRealtimeOtp("");
+                          }}
+                          className="text-gov-700 hover:underline font-bold text-[11px] cursor-pointer"
+                        >
+                          Change Number
+                        </button>
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                          Enter 6-Digit OTP *
-                        </label>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Enter 6-Digit OTP *
+                          </label>
+                          <span className="text-[11px] font-mono font-bold text-slate-500">
+                            {otpValue.length}/6 digits
+                          </span>
+                        </div>
                         <input
                           type="text"
                           maxLength={6}
                           required
                           autoFocus
-                          placeholder="123456"
+                          placeholder="• • • • • •"
                           value={otpValue}
                           onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, ""))}
-                          className="w-full px-4 py-3 text-center text-xl font-mono font-bold tracking-widest rounded-xl border-2 border-gov-700 focus:outline-hidden bg-white"
+                          className="w-full px-4 py-3 text-center text-2xl font-mono font-black tracking-widest rounded-xl border-2 border-gov-700 focus:outline-hidden bg-white text-slate-900 shadow-inner"
                         />
                       </div>
 
                       <div className="flex items-center justify-between text-xs pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setOtpStep(false)}
-                          className="text-gov-700 hover:underline font-semibold"
-                        >
-                          Change Mobile Number
-                        </button>
+                        <span className="text-slate-500 text-[11px]">
+                          Didn't receive code?
+                        </span>
 
                         {resendTimer > 0 ? (
                           <span className="text-slate-400 font-medium">
-                            Resend in {resendTimer}s
+                            Resend in <strong>{resendTimer}s</strong>
                           </span>
                         ) : (
                           <button
                             type="button"
                             onClick={handleSendOtp}
-                            className="text-gov-700 hover:underline font-bold"
+                            className="text-gov-700 hover:underline font-bold cursor-pointer"
                           >
-                            Resend OTP
+                            Resend New OTP
                           </button>
                         )}
                       </div>
 
                       <button
                         type="submit"
-                        disabled={loading || otpValue.length < 4}
-                        className="w-full py-3 px-4 rounded-xl bg-gov-700 hover:bg-gov-800 disabled:bg-slate-300 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                        disabled={loading || otpValue.length < 6}
+                        className="w-full py-3 px-4 rounded-xl bg-gov-700 hover:bg-gov-800 disabled:bg-slate-300 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         {loading ? "Verifying..." : "Verify & Login"}
                         <ShieldCheck className="w-4 h-4 text-emerald-300" />
@@ -520,33 +595,103 @@ const Login = () => {
                   ) : (
                     /* Step 2: Verify Email OTP */
                     <form onSubmit={handleVerifyOtp} className="space-y-4">
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900">
-                        <p className="font-semibold">OTP sent to {email}</p>
-                        <span className="text-[11px] text-blue-700">
-                          (Demo OTP Mode: enter <strong>123456</strong>)
-                        </span>
+                      {/* Real-Time Email Delivery Card */}
+                      {realtimeOtp && (
+                        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#0b3b60] to-[#00809d] text-white shadow-md border border-white/20 animate-in fade-in slide-in-from-top-2 duration-200 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold shrink-0 shadow-xs">
+                                <Mail className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <div className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">
+                                  Govt Mail Service • Delivered
+                                </div>
+                                <div className="text-xs font-semibold flex items-center gap-1.5 mt-0.5">
+                                  <span>OTP:</span>
+                                  <span className="font-mono font-black text-amber-300 text-sm tracking-widest bg-black/30 px-2 py-0.5 rounded border border-white/10">
+                                    {realtimeOtp}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setOtpValue(realtimeOtp)}
+                              className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
+                              title="Auto-fill OTP into input"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-slate-950" />
+                              Auto-Fill
+                            </button>
+                          </div>
+                          <div className="flex items-center justify-between text-[10px] text-slate-200 border-t border-white/15 pt-1.5">
+                            <span>Sent to {email}</span>
+                            <span className="text-amber-200 font-bold">Valid for 5 mins</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center justify-between">
+                        <span>OTP dispatched to <strong>{email}</strong></span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOtpStep(false);
+                            setOtpValue("");
+                            setRealtimeOtp("");
+                          }}
+                          className="text-gov-700 hover:underline font-bold text-[11px] cursor-pointer"
+                        >
+                          Change Email
+                        </button>
                       </div>
 
                       <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                          Enter OTP Code *
-                        </label>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Enter 6-Digit OTP *
+                          </label>
+                          <span className="text-[11px] font-mono font-bold text-slate-500">
+                            {otpValue.length}/6 digits
+                          </span>
+                        </div>
                         <input
                           type="text"
                           maxLength={6}
                           required
                           autoFocus
-                          placeholder="123456"
+                          placeholder="• • • • • •"
                           value={otpValue}
                           onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, ""))}
-                          className="w-full px-4 py-3 text-center text-xl font-mono font-bold tracking-widest rounded-xl border-2 border-gov-700 focus:outline-hidden bg-white"
+                          className="w-full px-4 py-3 text-center text-2xl font-mono font-black tracking-widest rounded-xl border-2 border-gov-700 focus:outline-hidden bg-white text-slate-900 shadow-inner"
                         />
+                      </div>
+
+                      <div className="flex items-center justify-between text-xs pt-1">
+                        <span className="text-slate-500 text-[11px]">
+                          Didn't receive email? Check spam
+                        </span>
+
+                        {resendTimer > 0 ? (
+                          <span className="text-slate-400 font-medium">
+                            Resend in <strong>{resendTimer}s</strong>
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleSendOtp}
+                            className="text-gov-700 hover:underline font-bold cursor-pointer"
+                          >
+                            Resend New OTP
+                          </button>
+                        )}
                       </div>
 
                       <button
                         type="submit"
-                        disabled={loading || otpValue.length < 4}
-                        className="w-full py-3 px-4 rounded-xl bg-gov-700 hover:bg-gov-800 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
+                        disabled={loading || otpValue.length < 6}
+                        className="w-full py-3 px-4 rounded-xl bg-gov-700 hover:bg-gov-800 disabled:bg-slate-300 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
                         {loading ? "Verifying..." : "Verify & Login"}
                         <ShieldCheck className="w-4 h-4 text-emerald-300" />

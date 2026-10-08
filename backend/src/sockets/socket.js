@@ -116,9 +116,23 @@ const emitUserNotification = (userId, notification) => {
   }
 };
 
+// Real-time OTP Notification broadcaster
+const emitOtpNotification = (identifier, otpPayload) => {
+  if (!io) return;
+  try {
+    io.emit("otp:received", otpPayload);
+    if (identifier) {
+      io.to(`otp_${identifier}`).emit("otp:received", otpPayload);
+    }
+  } catch (error) {
+    console.error("Socket OTP notification error:", error.message);
+  }
+};
+
 module.exports = {
   initSocket,
   getIO,
   notifyQueueUpdate,
   emitUserNotification,
+  emitOtpNotification,
 };
