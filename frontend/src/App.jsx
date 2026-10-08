@@ -11,12 +11,17 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PublicQueueDisplay from "./pages/PublicQueueDisplay";
+import ServiceCatalog from "./pages/ServiceCatalog";
+import TrackStatus from "./pages/TrackStatus";
+import Notifications from "./pages/Notifications";
 
 // Citizen
 import CitizenDashboard from "./pages/citizen/CitizenDashboard";
 import TakeToken from "./pages/citizen/TakeToken";
 import MyAppointments from "./pages/citizen/MyAppointments";
 import LiveQueue from "./pages/citizen/LiveQueue";
+import ApplyService from "./pages/citizen/ApplyService";
+import MyApplications from "./pages/citizen/MyApplications";
 
 // Officer
 import OfficerDashboard from "./pages/officer/OfficerDashboard";
@@ -47,81 +52,109 @@ function App() {
       <LanguageProvider>
         <BrowserRouter>
           <Layout>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/display" element={<PublicQueueDisplay />} />
-            <Route path="/display/:departmentId" element={<PublicQueueDisplay />} />
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/services" element={<ServiceCatalog />} />
+              <Route path="/track" element={<TrackStatus />} />
+              <Route path="/display" element={<PublicQueueDisplay />} />
+              <Route path="/display/:departmentId" element={<PublicQueueDisplay />} />
 
-            {/* Citizen Protected Routes */}
-            <Route
-              path="/citizen"
-              element={
-                <ProtectedRoute allowedRoles={["citizen"]}>
-                  <CitizenDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/citizen/take-token"
-              element={
-                <ProtectedRoute allowedRoles={["citizen"]}>
-                  <TakeToken />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/citizen/appointments"
-              element={
-                <ProtectedRoute allowedRoles={["citizen"]}>
-                  <MyAppointments />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/citizen/queue"
-              element={
-                <ProtectedRoute allowedRoles={["citizen", "officer", "admin"]}>
-                  <LiveQueue />
-                </ProtectedRoute>
-              }
-            />
+              {/* Shared Authenticated Routes */}
+              <Route
+                path="/notifications"
+                element={
+                  <ProtectedRoute allowedRoles={["citizen", "officer", "admin"]}>
+                    <Notifications />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Officer Protected Routes */}
-            <Route
-              path="/officer"
-              element={
-                <ProtectedRoute allowedRoles={["officer", "admin"]}>
-                  <OfficerDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/officer/queue"
-              element={
-                <ProtectedRoute allowedRoles={["officer", "admin"]}>
-                  <LiveQueue />
-                </ProtectedRoute>
-              }
-            />
+              {/* Citizen Protected Routes */}
+              <Route
+                path="/citizen"
+                element={
+                  <ProtectedRoute allowedRoles={["citizen"]}>
+                    <CitizenDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/citizen/take-token"
+                element={
+                  <ProtectedRoute allowedRoles={["citizen"]}>
+                    <TakeToken />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/citizen/apply"
+                element={
+                  <ProtectedRoute allowedRoles={["citizen"]}>
+                    <ApplyService />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/citizen/applications"
+                element={
+                  <ProtectedRoute allowedRoles={["citizen"]}>
+                    <MyApplications />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/citizen/appointments"
+                element={
+                  <ProtectedRoute allowedRoles={["citizen"]}>
+                    <MyAppointments />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/citizen/queue"
+                element={
+                  <ProtectedRoute allowedRoles={["citizen", "officer", "admin"]}>
+                    <LiveQueue />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Admin Protected Routes */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
+              {/* Officer Protected Routes */}
+              <Route
+                path="/officer"
+                element={
+                  <ProtectedRoute allowedRoles={["officer", "admin"]}>
+                    <OfficerDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/officer/queue"
+                element={
+                  <ProtectedRoute allowedRoles={["officer", "admin"]}>
+                    <LiveQueue />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Catch-all Fallback */}
-            <Route path="*" element={<Home />} />
-          </Routes>
-        </Layout>
-      </BrowserRouter>
+              {/* Admin Protected Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute allowedRoles={["admin"]}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Catch-all Fallback */}
+              <Route path="*" element={<Home />} />
+            </Routes>
+          </Layout>
+        </BrowserRouter>
       </LanguageProvider>
     </AuthProvider>
   );

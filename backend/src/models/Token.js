@@ -48,6 +48,57 @@ const tokenSchema = new mongoose.Schema(
       default: null,
     },
 
+    office: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "GovernmentOffice",
+      default: null,
+    },
+
+    application: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Application",
+      default: null,
+    },
+
+    priorityType: {
+      type: String,
+      set: (v) => {
+        if (!v) return "normal";
+        const clean = v.toLowerCase().replace(/[-\s]/g, "_");
+        if (clean === "disability" || clean === "pwd") return "differently_abled";
+        if (clean === "pregnant") return "pregnant_woman";
+        return clean;
+      },
+      enum: [
+        "normal",
+        "senior_citizen",
+        "differently_abled",
+        "pregnant_woman",
+        "emergency",
+        "disability",
+        "pregnant",
+        "NORMAL",
+        "SENIOR_CITIZEN",
+        "DIFFERENTLY_ABLED",
+        "PREGNANT_WOMAN",
+        "EMERGENCY",
+        "DISABILITY",
+        "PREGNANT",
+      ],
+      default: "normal",
+    },
+
+    priorityVerified: {
+      type: Boolean,
+      default: false,
+    },
+
+    priorityApprovedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
     queueDate: {
       type: Date,
       required: true,
@@ -67,6 +118,11 @@ const tokenSchema = new mongoose.Schema(
     },
 
     calledAt: {
+      type: Date,
+      default: null,
+    },
+
+    startedAt: {
       type: Date,
       default: null,
     },
@@ -93,7 +149,7 @@ const tokenSchema = new mongoose.Schema(
 
 // Indexes
 tokenSchema.index({ department: 1, queueDate: 1, status: 1 });
-tokenSchema.index({ department: 1, queueDate: 1, tokenNumber: 1 });
+tokenSchema.index({ department: 1, queueDate: 1, priorityVerified: -1, tokenNumber: 1 });
 tokenSchema.index({ citizen: 1, status: 1 });
 tokenSchema.index({ appointment: 1 }, { sparse: true, unique: true });
 

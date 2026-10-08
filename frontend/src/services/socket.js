@@ -43,3 +43,17 @@ export const leaveDepartment = (departmentId) => {
     s.emit("leaveDepartment", departmentId);
   }
 };
+
+export const joinUser = (userId) => {
+  const s = getSocket();
+  if (s && userId) {
+    s.emit("joinUser", userId);
+  }
+};
+
+export const leaveUser = (userId) => {
+  const s = getSocket();
+  if (s && userId) {
+    s.emit("leaveUser", userId);
+  }
+};

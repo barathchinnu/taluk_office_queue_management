@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import LanguageSwitcher from "./LanguageSwitcher";
+import NotificationBell from "./NotificationBell";
 import {
   Building2,
   Ticket,
@@ -16,6 +17,9 @@ import {
   Briefcase,
   Users,
   Clock,
+  BookOpen,
+  Search,
+  FileText,
 } from "lucide-react";
 
 const Navbar = () => {
@@ -64,8 +68,33 @@ const Navbar = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1.5">
-            {/* Public Link */}
+          <nav className="hidden md:flex items-center gap-1">
+            {/* Public Service Catalog & Track */}
+            <Link
+              to="/services"
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                isActive("/services")
+                  ? "bg-gov-50 text-gov-700"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              }`}
+            >
+              <BookOpen className="w-4 h-4 text-gov-600" />
+              Services
+            </Link>
+
+            <Link
+              to="/track"
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                isActive("/track")
+                  ? "bg-gov-50 text-gov-700"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              }`}
+            >
+              <Search className="w-4 h-4 text-blue-600" />
+              Track
+            </Link>
+
+            {/* Public Screen */}
             <Link
               to="/display"
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
@@ -102,6 +131,17 @@ const Navbar = () => {
                 >
                   <Ticket className="w-4 h-4 text-amber-600" />
                   {t("nav", "takeToken")}
+                </Link>
+                <Link
+                  to="/citizen/applications"
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                    isActive("/citizen/applications")
+                      ? "bg-gov-50 text-gov-700"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                  }`}
+                >
+                  <FileText className="w-4 h-4 text-purple-600" />
+                  Applications
                 </Link>
                 <Link
                   to="/citizen/appointments"
@@ -172,8 +212,11 @@ const Navbar = () => {
             )}
           </nav>
 
-          {/* Right Action: Language Switcher & Auth Buttons */}
+          {/* Right Action: Notifications, Language Switcher & Auth Buttons */}
           <div className="hidden md:flex items-center gap-3">
+            {/* Notification Bell */}
+            {isAuthenticated && <NotificationBell />}
+
             {/* Global Language Switcher */}
             <LanguageSwitcher />
 
@@ -227,6 +270,7 @@ const Navbar = () => {
 
           {/* Mobile menu toggle */}
           <div className="flex md:hidden items-center gap-2">
+            {isAuthenticated && <NotificationBell />}
             <LanguageSwitcher variant="compact" />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -246,12 +290,38 @@ const Navbar = () => {
           </div>
 
           <Link
+            to="/services"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100"
+          >
+            Services Catalog
+          </Link>
+
+          <Link
+            to="/track"
+            onClick={() => setMobileMenuOpen(false)}
+            className="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100"
+          >
+            Track Status
+          </Link>
+
+          <Link
             to="/display"
             onClick={() => setMobileMenuOpen(false)}
             className="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100"
           >
             {t("nav", "publicScreen")}
           </Link>
+
+          {isAuthenticated && (
+            <Link
+              to="/notifications"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block px-3 py-2 rounded-lg text-sm font-semibold text-gov-700 hover:bg-gov-50"
+            >
+              Notification Center
+            </Link>
+          )}
 
           {isAuthenticated && user?.role === "citizen" && (
             <>
@@ -268,6 +338,13 @@ const Navbar = () => {
                 className="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100"
               >
                 {t("nav", "takeToken")}
+              </Link>
+              <Link
+                to="/citizen/applications"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                My Applications
               </Link>
               <Link
                 to="/citizen/appointments"
@@ -314,7 +391,7 @@ const Navbar = () => {
                   {language === "ta"
                     ? (user?.role === "officer" ? "அலுவலர்" : user?.role === "admin" ? "நிர்வாகி" : "குடிமகன்")
                     : user?.role}
-                  )
+                    )
                 </div>
                 <button
                   onClick={() => {

@@ -1,246 +1,208 @@
-# Smart Government Queue Management System (Taluk Office)
+# Smart Government Service & Queue Management Platform — Taluk Office
 
-A modern, transparent, paperless Queue and Appointment Management System designed for Taluk Administrative Offices (e-Seva centers, Revenue Departments, Certificate Desks, and Social Welfare Services).
+A production-grade, multi-tiered digital government service platform built for **Taluk Offices, Revenue Departments, Certificate Desks, Social Welfare Centers, and Aadhaar Seva Kendras**.
+
+The platform provides end-to-end service orchestration:
+```
+Government Office
+       ↓
+   Department
+       ↓
+    Service
+       ↓
+Appointment / Walk-in
+       ↓
+     Token (Normal FIFO / Senior Citizen / Differently-Abled / Emergency)
+       ↓
+     Queue
+       ↓
+    Counter
+       ↓
+    Officer Desk
+       ↓
+Application Scrutiny & Document Verification
+       ↓
+Service Completion
+       ↓
+Citizen Feedback & Rating (1–5 Stars)
+       ↓
+Omni-Channel Notifications (In-App, Email, SMS, WebSockets)
+```
 
 ---
 
-## 🌟 Key Features
+## 🌟 Architecture & Core Capabilities
 
-### 👤 Citizen Portal
-- **Walk-in Token Generation:** Select a department and service to receive an immediate token number (e.g. `REV001`).
-- **Live Queue Tracking:** View real-time queue position (`peopleAhead`) and calculated wait time (`estimatedWaitTime = peopleAhead × avgServiceTime`).
-- **Advance Appointment Booking:** Schedule visits for upcoming dates with time slots.
-- **Appointment Check-in:** On appointment day, check in with one click to transition the appointment directly into the active token queue.
-- **My Active Token:** Live status card with automated alerts when your token is called.
+### 🏢 1. Scalable Government Office Hierarchy (`Phase 1 & 3`)
+- Multi-office extensible data model (`GovernmentOffice`) supporting:
+  - **Taluk Administrative Offices**
+  - **Revenue Department Offices**
+  - **Sub-Registrar Offices**
+  - **Social Welfare Desks**
+  - **UIDAI Aadhaar Centers**
+  - **Municipal Corporations & Citizen Service Centres (CSC)**
+- Office metadata: jurisdiction code, working hours, district/taluk identifiers, official contact information.
+- Full backward-compatibility: defaults to Taluk Headquarters office without breaking existing departments or counters.
 
-### 💼 Officer Desk
-- **Assigned Counter Workflow:** Automatically syncs with officer's assigned counter desk (e.g., `Revenue Counter 1`).
-- **Token Call Sequence:**
-  1. **CALL NEXT:** Announces next citizen in FIFO queue order (status: `waiting` → `called`).
-  2. **START SERVICE:** Starts processing the citizen (status: `called` → `serving`).
-  3. **COMPLETE SERVICE:** Concludes the case (status: `serving` → `completed`), automatically resolves appointment if linked, and marks the desk ready for the next citizen.
-  4. **SKIP TOKEN:** Handles citizen no-show (status: `called`/`serving` → `skipped`).
-- **Availability Toggle:** Easily switch between `Available` and `Unavailable` status.
-- **Live Department Queue View:** Real-time table of all citizens waiting in the department.
+### 🔔 2. Omni-Channel Notification Engine & Citizen Center (`Phase 5 & 6`)
+- Real-time in-app WebSocket notification delivery via dedicated user rooms (`user_${id}`).
+- Nodemailer SMTP email integration with automatic mock fallback logger.
+- Abstracted SMS delivery provider for zero-cost local test execution.
+- Dedicated **Citizen Notification Center** (`/notifications`):
+  - Interactive notification bell in Navbar with live unread badges.
+  - Dropdown preview with quick navigation to tokens, appointments, or applications.
+  - Mark as read, mark all as read, delete notification, and category filtering.
+- Automated system notification triggers:
+  - `TOKEN_GENERATED`, `TOKEN_NEAR` (when 1 or 2 citizens ahead), `TOKEN_CALLED`, `SERVICE_STARTED`, `SERVICE_COMPLETED`
+  - `APPOINTMENT_BOOKED`, `APPOINTMENT_CONFIRMED`, `APPOINTMENT_CANCELLED`
+  - `APPLICATION_SUBMITTED`, `DOCUMENT_VERIFICATION`, `APPLICATION_APPROVED`, `APPLICATION_REJECTED`
 
-### 🛡️ Admin Console
-- **Analytics Dashboard:** Live metrics cards (Total Citizens, Officers, Departments, Services, Counters, Today's Tokens, Waiting, Serving, Completed).
-- **Department Management:** Full CRUD operations for Taluk departments with unique codes (e.g. `REV`, `ADM`, `WEL`, `CERT`).
-- **Service Management:** CRUD operations with configurable average service times in minutes.
-- **Revenue Officer Management:** Create officer profiles along with login accounts, edit designations, and deactivate accounts.
-- **Counter Desk Management:** Create counters, assign/reassign officers, and monitor desk status.
-- **Appointments Overview:** View, filter, and track all citizen appointment bookings.
+### ⚡ 3. Intelligent Priority Queue System (`Phase 7, 8 & 9`)
+- Categorized citizen prioritization:
+  - `NORMAL` (Standard FIFO)
+  - `SENIOR_CITIZEN` (60+ years)
+  - `DISABILITY` (Person with Disability - PwD)
+  - `PREGNANT` (Pregnant Women / Nursing Mothers)
+  - `EMERGENCY` (Authorized Urgent Priority)
+- Controlled Verification Policy: Prevents unrestricted self-selection; priority tokens require officer verification (`PATCH /api/tokens/:id/verify-priority`) before hopping the queue.
+- Dynamic wait-time computation: `estimatedWaitTime = peopleAhead × service.averageServiceTime`.
 
-### 📺 Public Queue Display Screen (Waiting Hall TV)
-- Full-screen high-contrast display for waiting hall TV screens (`/display` or `/display/:departmentId`).
-- Shows **NOW SERVING**, **COUNTER NUMBER**, **NOW CALLED**, **NEXT IN LINE**, and **AVERAGE WAIT TIME**.
+### 📑 4. Citizen Service Catalog & Prerequisites (`Phase 17`)
+- Comprehensive public directory (`/services`) with real-time keyword search and department filters.
+- Detailed citizen charter per service:
+  - Prerequisite document checklist (e.g. Sale Deed, TC, Ration Card).
+  - Expected SLA processing days (e.g. 3 days for Income Certificate).
+  - Official government fee (Free vs. ₹50 / ₹60).
+  - Instant action buttons: **Walk-in Token**, **Apply Online**, or **Book Appointment**.
+
+### 📝 5. Digital Application Workflow & Document Scrutiny (`Phase 11 & 12`)
+- Online application submission portal (`/citizen/apply`).
+- Multer multi-part document management supporting PDF and image uploads up to 10MB.
+- Application status life cycle:
+  `DRAFT → SUBMITTED → DOCUMENT_VERIFICATION → OFFICER_REVIEW → ADDITIONAL_INFO_REQUIRED → APPROVED / REJECTED → COMPLETED`.
+- Officer Document Scrutiny panel:
+  - Inspect uploaded proofs inline or via secure download.
+  - Mark individual documents as `VERIFIED`, `REJECTED`, or `REUPLOAD_REQUIRED`.
+  - Approve or reject applications with official remarks and citizen alerts.
+
+### 🔍 6. Public Tracking & Stepper Status (`Phase 19`)
+- Public tracking page (`/track`) requiring no login.
+- Search by Application Number (`APP-2026-XXXXXX`) or Token Code (`REV001`).
+- Visual progress stepper with status badges, updated timestamp, and next recommended citizen actions.
+
+### ⭐ 7. Citizen Feedback & Satisfaction Analytics (`Phase 18`)
+- Interactive 5-star rating modal with comment submission upon service completion.
+- Admin satisfaction analytics dashboard:
+  - Overall average rating score (e.g., `4.9 / 5.0`).
+  - Star breakdown distribution (5★ through 1★).
+  - Department and service quality rankings.
+  - Recent citizen feedback comments feed.
+
+### 💼 8. Officer Desk & Counter Controls (`Phase 13 & 14`)
+- Counter availability toggle (Available / Unavailable / Busy).
+- One-click workflow controls: `CALL NEXT TOKEN`, `START SERVICE`, `COMPLETE SERVICE`, `SKIP / NO-SHOW`.
+- Integrated **Applications & Scrutiny** desk to review documents without leaving the dashboard.
+- Live department waiting list with priority verification badges.
+
+### 🛡️ 9. Admin Console & Analytics (`Phase 15`)
+- Live KPI cards: Total Citizens, Officers, Departments, Services, Counters, Today's Appointments, Tokens.
+- Department, Service, Officer, and Counter management.
+- Government Offices directory tab.
+- Applications audit log.
+- Feedback analytics and ratings breakdown.
+
+### 📺 10. Public Waiting Hall Display (`Phase 16`)
+- Full-screen high-contrast display for waiting hall TV monitors (`/display`).
 - Sound chime notification whenever a token is called.
-- No citizen phone numbers or private data exposed.
+- High-privacy mode: No citizen phone numbers or private data exposed.
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Backend:** Node.js, Express.js 5, MongoDB Atlas, Mongoose 9
-- **Authentication:** JWT (JSON Web Tokens) with role-based access control, bcryptjs password hashing
-- **Real-Time Synchronization:** Socket.IO with automatic department room broadcasting & polling fallback
-- **Frontend:** React 18, Vite 6, React Router 7, Axios, Lucide React icons, Tailwind CSS 3
+| Layer | Technologies |
+|---|---|
+| **Backend** | Node.js, Express.js 5, MongoDB Atlas, Mongoose 9, Multer, Nodemailer, bcryptjs, JWT |
+| **Real-Time** | Socket.IO 4 (User rooms, Department rooms, Office rooms) |
+| **Frontend** | React 18, Vite 6, React Router 7, Axios, Lucide React, Tailwind CSS 3 |
+| **Localization** | Dual Language Engine: Tamil (தமிழ்) & English |
 
 ---
 
-## 📂 Project Structure
+## 🔑 Demo Credentials
 
-```
-smart-government-queue-system/
-│
-├── backend/
-│   ├── src/
-│   │   ├── config/
-│   │   │   └── db.js                # MongoDB Atlas connection
-│   │   ├── controllers/
-│   │   │   ├── adminController.js
-│   │   │   ├── appointmentController.js
-│   │   │   ├── authController.js
-│   │   │   ├── citizenController.js
-│   │   │   ├── counterController.js
-│   │   │   ├── departmentController.js
-│   │   │   ├── officerController.js
-│   │   │   ├── serviceController.js
-│   │   │   └── tokenController.js
-│   │   ├── middleware/
-│   │   │   └── authMiddleware.js    # protect & authorize middlewares
-│   │   ├── models/
-│   │   │   ├── Appointment.js
-│   │   │   ├── Counter.js
-│   │   │   ├── Department.js
-│   │   │   ├── Officer.js
-│   │   │   ├── Service.js
-│   │   │   ├── Token.js
-│   │   │   └── User.js
-│   │   ├── routes/
-│   │   │   ├── adminRoutes.js
-│   │   │   ├── appointmentRoutes.js
-│   │   │   ├── authRoutes.js
-│   │   │   ├── citizenRoutes.js
-│   │   │   ├── counterRoutes.js
-│   │   │   ├── departmentRoutes.js
-│   │   │   ├── officerRoutes.js
-│   │   │   ├── serviceRoutes.js
-│   │   │   └── tokenRoutes.js
-│   │   ├── sockets/
-│   │   │   └── socket.js            # Socket.IO server & event broadcaster
-│   │   ├── utils/
-│   │   │   └── generateToken.js     # JWT generator
-│   │   ├── app.js                   # Express application setup & error handlers
-│   │   ├── seed.js                  # Idempotent DB seeding script
-│   │   └── server.js                # HTTP server & socket initialization
-│   ├── .env                         # Environment variables (Atlas URI, JWT Secret)
-│   ├── .env.example
-│   ├── package.json
-│   └── test_api.js                  # 25-step backend test suite
-│
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Footer.jsx
-│   │   │   ├── Navbar.jsx
-│   │   │   ├── ProtectedRoute.jsx
-│   │   │   └── StatusBadge.jsx
-│   │   ├── context/
-│   │   │   └── AuthContext.jsx      # Auth state & token persistence
-│   │   ├── pages/
-│   │   │   ├── admin/
-│   │   │   │   └── AdminDashboard.jsx
-│   │   │   ├── citizen/
-│   │   │   │   ├── CitizenDashboard.jsx
-│   │   │   │   ├── LiveQueue.jsx
-│   │   │   │   ├── MyAppointments.jsx
-│   │   │   │   └── TakeToken.jsx
-│   │   │   ├── officer/
-│   │   │   │   └── OfficerDashboard.jsx
-│   │   │   ├── Home.jsx
-│   │   │   ├── Login.jsx
-│   │   │   ├── PublicQueueDisplay.jsx
-│   │   │   └── Register.jsx
-│   │   ├── services/
-│   │   │   ├── api.js               # Axios instance with all backend APIs
-│   │   │   └── socket.js            # Socket.IO client
-│   │   ├── App.jsx                  # Main router setup
-│   │   ├── index.css                # Tailwind directives & styles
-│   │   └── main.jsx
-│   ├── .env.example
-│   ├── index.html
-│   ├── package.json
-│   ├── tailwind.config.js
-│   └── vite.config.js
-│
-├── API_DOCUMENTATION.md             # Complete API specification
-├── README.md
-└── .gitignore
-```
-
----
-
-## 🔑 Test Accounts (Ready to use)
-
-| Role | Email | Password | Details |
+| Role | Email | Password | Assigned Counter |
 |---|---|---|---|
-| **Admin** | `admin@talukoffice.com` | `admin123` | Full access to console, departments, services, officers, counters |
-| **Officer** | `officer@test.com` | `officer123` | Employee ID: `OFF002`, Revenue Officer, Assigned to Counter #1 |
-| **Citizen** | `barathnew@gmail.com` | *(or register any)* | Citizen booking & token generation |
-
-*Note: On the login screen, clicking the **Admin** or **Officer** tab automatically populates the test credentials for one-click access.*
-
----
-
-## 🚦 Token State Machine
-
-The queue strictly enforces sequential status transitions:
-
-```
-[Walk-in / Check-in] 
-        ↓
-    waiting
-        ↓
-      called  ──(skip)──→  skipped
-        ↓
-     serving  ──(skip)──→  skipped
-        ↓
-    completed
-```
-
-- Invalid transitions (e.g. `completed` → `serving`, `skipped` → `called`, `waiting` → `completed`) are rejected by controller validations.
+| **Administrator** | `admin@talukoffice.com` | `admin123` | Admin Console Access |
+| **Revenue Officer** | `officer@test.com` | `officer123` | Revenue Counter 1 (OFF002) |
+| **Aadhaar Officer** | `aadhaar@talukoffice.com` | `officer123` | Aadhaar Kendra Counter 5 (UID001) |
+| **Citizen (Arun Kumar)** | `citizen@test.com` | `citizen123` | Citizen Portal & Tracking |
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quick Start Guide
 
-### 1. Backend Setup
+### 1. Prerequisites
+- Node.js (v18+ recommended)
+- MongoDB Atlas URI or local MongoDB connection
 
+### 2. Backend Setup
 ```bash
 cd backend
 npm install
 ```
 
-Ensure `.env` contains:
+Create or verify `.env` file in `backend/`:
 ```env
 PORT=5000
-MONGODB_URI=your_mongodb_atlas_connection_string
+MONGODB_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret_key
+NODE_ENV=development
 ```
 
-Seed the database (idempotent; will not duplicate existing records):
+Seed initial administrative data, office hierarchy, departments, services, and demo accounts:
 ```bash
 node src/seed.js
-```
-
-Run test suite:
-```bash
-node test_api.js
 ```
 
 Start the backend server:
 ```bash
 npm run dev
-# Or production mode:
-npm start
 ```
-*Backend runs on `http://localhost:5000`.*
+Backend runs at: `http://localhost:5000`
 
----
-
-### 2. Frontend Setup
-
+### 3. Frontend Setup
 ```bash
 cd ../frontend
 npm install
-```
-
-Start the Vite development server:
-```bash
 npm run dev
 ```
-*Frontend runs on `http://localhost:3000`.*
+Frontend runs at: `http://localhost:3000`
+
+### 4. Run Automated E2E Platform Verification
+In `backend/`:
+```bash
+node test_all_workflows.js
+```
+Executes 13 automated tests verifying auth, priority queue, application tracking, notifications, feedback, and analytics.
 
 ---
 
-## 🧪 Verified Test Suite
+## 📡 Socket.IO Real-Time Events
 
-The backend contains a 25-step automated integration test suite in `backend/test_api.js`:
-- ✅ Root health check
-- ✅ Admin login
-- ✅ Officer login
-- ✅ Citizen registration & profile
-- ✅ Department & Service listings
-- ✅ Walk-in token generation (`REV001`)
-- ✅ Citizen active token calculation (`peopleAhead`, `estimatedWaitTime`)
-- ✅ Public waiting hall screen (safe data filter)
-- ✅ Officer dashboard metrics
-- ✅ Call next waiting token (`waiting` → `called`)
-- ✅ Start service (`called` → `serving`)
-- ✅ Complete service (`serving` → `completed`)
-- ✅ Advance appointment booking
-- ✅ Appointment check-in (`booked` → `checked_in` + token issued)
-- ✅ Officer skip token (`called` → `skipped`)
-- ✅ Admin dashboard statistics
-- ✅ Role-based authorization & security rejection (401, 403)
+| Event Name | Direction | Payload | Description |
+|---|---|---|---|
+| `joinUser` | Client → Server | `userId` | Joins private user room `user_${userId}` |
+| `notification:new` | Server → Client | `Notification` | Emitted when citizen receives alert |
+| `joinDepartment` | Client → Server | `deptId` | Joins room `department_${deptId}` |
+| `token:generated` | Server → Client | `Token` | New token generated in queue |
+| `token:called` | Server → Client | `Token` | Token called to counter |
+| `token:serving` | Server → Client | `Token` | Service started |
+| `token:completed` | Server → Client | `Token` | Service completed |
+| `token:skipped` | Server → Client | `Token` | Citizen marked no-show |
+| `queue:updated` | Server → Client | `{ departmentId }` | Triggers UI refresh |
+
+---
+
+## 📄 License & Attribution
+Developed as an advanced CSE Full-Stack Capstone Project for Smart Governance Digital Transformation.

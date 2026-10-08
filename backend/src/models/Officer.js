@@ -17,6 +17,13 @@ const officerSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Government Office where the officer is stationed
+    office: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "GovernmentOffice",
+      default: null,
+    },
+
     // Government employee ID
     employeeId: {
       type: String,

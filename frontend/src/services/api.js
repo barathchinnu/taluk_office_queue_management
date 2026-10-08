@@ -83,11 +83,12 @@ export const serviceService = {
 // TOKEN SERVICES
 // ==========================================
 export const tokenService = {
-  generateToken: async (departmentId, serviceId) => {
-    const res = await api.post("/tokens", {
-      department: departmentId,
-      service: serviceId,
-    });
+  generateToken: async (departmentId, serviceId, priorityType = "NORMAL", office = undefined) => {
+    const payload =
+      typeof departmentId === "object"
+        ? departmentId
+        : { department: departmentId, service: serviceId, priorityType, office };
+    const res = await api.post("/tokens", payload);
     return res.data;
   },
   getMyToken: async () => {
@@ -116,6 +117,13 @@ export const tokenService = {
   },
   skipToken: async (tokenId) => {
     const res = await api.post(`/tokens/${tokenId}/skip`);
+    return res.data;
+  },
+  verifyPriority: async (tokenId, priorityVerified = true, priorityType) => {
+    const res = await api.patch(`/tokens/${tokenId}/verify-priority`, {
+      priorityVerified,
+      priorityType,
+    });
     return res.data;
   },
 };
@@ -265,6 +273,126 @@ export const adminService = {
   // Appointments
   getAppointments: async (params) => {
     const res = await api.get("/admin/appointments", { params });
+    return res.data;
+  },
+};
+
+// ==========================================
+// NOTIFICATION SERVICES
+// ==========================================
+export const notificationService = {
+  getMy: async (limit = 30) => {
+    const res = await api.get("/notifications", { params: { limit } });
+    return res.data;
+  },
+  markAsRead: async (id) => {
+    const res = await api.patch(`/notifications/${id}/read`);
+    return res.data;
+  },
+  markAllAsRead: async () => {
+    const res = await api.patch("/notifications/read-all");
+    return res.data;
+  },
+  delete: async (id) => {
+    const res = await api.delete(`/notifications/${id}`);
+    return res.data;
+  },
+};
+
+// ==========================================
+// GOVERNMENT OFFICE SERVICES
+// ==========================================
+export const officeService = {
+  getAll: async (all = false) => {
+    const res = await api.get("/offices", { params: { all } });
+    return res.data;
+  },
+  getById: async (id) => {
+    const res = await api.get(`/offices/${id}`);
+    return res.data;
+  },
+  create: async (data) => {
+    const res = await api.post("/offices", data);
+    return res.data;
+  },
+  update: async (id, data) => {
+    const res = await api.put(`/offices/${id}`, data);
+    return res.data;
+  },
+  delete: async (id) => {
+    const res = await api.delete(`/offices/${id}`);
+    return res.data;
+  },
+};
+
+// ==========================================
+// APPLICATION WORKFLOW SERVICES
+// ==========================================
+export const applicationService = {
+  create: async (data) => {
+    const res = await api.post("/applications", data);
+    return res.data;
+  },
+  getMy: async () => {
+    const res = await api.get("/applications/my");
+    return res.data;
+  },
+  getById: async (id) => {
+    const res = await api.get(`/applications/${id}`);
+    return res.data;
+  },
+  track: async (query) => {
+    const res = await api.get(`/applications/track/${encodeURIComponent(query)}`);
+    return res.data;
+  },
+  getAll: async (params) => {
+    const res = await api.get("/applications", { params });
+    return res.data;
+  },
+  updateStatus: async (id, data) => {
+    const res = await api.patch(`/applications/${id}/status`, data);
+    return res.data;
+  },
+  uploadDocument: async (id, formData) => {
+    const res = await api.post(`/applications/${id}/documents`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data;
+  },
+  verifyDocument: async (docId, data) => {
+    const res = await api.patch(`/applications/documents/${docId}/verify`, data);
+    return res.data;
+  },
+};
+
+// ==========================================
+// FEEDBACK SERVICES
+// ==========================================
+export const feedbackService = {
+  submit: async (data) => {
+    const res = await api.post("/feedback", data);
+    return res.data;
+  },
+  getMy: async () => {
+    const res = await api.get("/feedback/my");
+    return res.data;
+  },
+  getAnalytics: async () => {
+    const res = await api.get("/feedback/analytics");
+    return res.data;
+  },
+};
+
+// ==========================================
+// SERVICE CATALOG SERVICES
+// ==========================================
+export const serviceCatalogService = {
+  getAll: async (params) => {
+    const res = await api.get("/service-catalog", { params });
+    return res.data;
+  },
+  getById: async (id) => {
+    const res = await api.get(`/service-catalog/${id}`);
     return res.data;
   },
 };

@@ -7,12 +7,36 @@ const Department = require("./models/Department");
 const Service = require("./models/Service");
 const Officer = require("./models/Officer");
 const Counter = require("./models/Counter");
+const GovernmentOffice = require("./models/GovernmentOffice");
 
 const seedDatabase = async () => {
   try {
     console.log("🌱 Connecting to MongoDB Atlas for seeding...");
     await mongoose.connect(process.env.MONGODB_URI);
     console.log("✅ Connected to database");
+
+    // 0. Seed Default Government Office
+    let defaultOffice = await GovernmentOffice.findOne({ code: "TALUK_HQ" });
+    if (!defaultOffice) {
+      defaultOffice = await GovernmentOffice.create({
+        name: "Taluk Office - Kovilpatti",
+        code: "TALUK_HQ",
+        officeType: "TALUK_OFFICE",
+        description: "Primary taluk administrative headquarters providing revenue, certificates, and welfare services.",
+        address: "Taluk Office Road, Kovilpatti",
+        district: "Thoothukudi",
+        taluk: "Kovilpatti",
+        contactPhone: "04632-220100",
+        email: "tahsildar.kvp@tn.gov.in",
+        openingTime: "09:30 AM",
+        closingTime: "05:30 PM",
+        workingDays: "Monday to Friday",
+        isActive: true,
+      });
+      console.log("✅ Created Government Office: Taluk Office - Kovilpatti (TALUK_HQ)");
+    } else {
+      console.log("ℹ️ Government Office exists: " + defaultOffice.name);
+    }
 
     // 1. Admin User
     let adminUser = await User.findOne({ email: "admin@talukoffice.com" });
@@ -80,6 +104,8 @@ const seedDatabase = async () => {
         }
         console.log(`ℹ️ Department already exists: ${d.name} (${dept.code})`);
       }
+      dept.office = defaultOffice._id;
+      await dept.save();
       departmentMap[d.name] = dept;
     }
 
@@ -89,88 +115,140 @@ const seedDatabase = async () => {
       {
         departmentName: "Revenue",
         name: "Income Certificate",
+        code: "REV_INC",
         description: "Verification and processing of official family income certificate",
         averageServiceTime: 10,
+        fee: 60,
+        expectedProcessingDays: 3,
+        requiredDocuments: ["Aadhaar Card", "Salary Certificate / Pay Slip", "Ration Card", "Self Declaration Affidavit"],
       },
       {
         departmentName: "Revenue",
         name: "Patta Related Service",
+        code: "REV_PATTA",
         description: "Patta transfer, sub-division, name correction, and chitta extract",
         averageServiceTime: 15,
+        fee: 0,
+        expectedProcessingDays: 15,
+        requiredDocuments: ["Sale Deed / Registered Document", "Previous Patta Copy", "EC (Encumbrance Certificate)", "Aadhaar Card"],
       },
       {
         departmentName: "Revenue",
         name: "Revenue Petition",
+        code: "REV_PET",
         description: "Submission and hearing of public revenue grievance petitions",
         averageServiceTime: 12,
+        fee: 0,
+        expectedProcessingDays: 14,
+        requiredDocuments: ["Petition Representation Letter", "Supporting Property / Identity Proofs"],
       },
 
       // Certificates Services
       {
         departmentName: "Certificates",
         name: "Community Certificate",
+        code: "CERT_COMM",
         description: "Official verification and issuance of caste/community certificate",
         averageServiceTime: 10,
+        fee: 60,
+        expectedProcessingDays: 7,
+        requiredDocuments: ["Father / Mother Community Certificate", "School Transfer Certificate (TC)", "Ration Card", "Aadhaar Card"],
       },
       {
         departmentName: "Certificates",
         name: "Nativity Certificate",
+        code: "CERT_NAT",
         description: "Proof of nativity and permanent domicile verification",
         averageServiceTime: 8,
+        fee: 60,
+        expectedProcessingDays: 5,
+        requiredDocuments: ["Birth Certificate", "Parent Proof of Residence (5+ years)", "Aadhaar Card", "Ration Card"],
       },
       {
         departmentName: "Certificates",
         name: "Residence Certificate",
+        code: "CERT_RES",
         description: "Proof of address and continuous residency verification",
         averageServiceTime: 8,
+        fee: 60,
+        expectedProcessingDays: 5,
+        requiredDocuments: ["EB Electricity Bill / Water Bill", "Rental Agreement / Property Tax Receipt", "Aadhaar Card"],
       },
 
       // Social Welfare Services
       {
         departmentName: "Social Welfare",
         name: "Old Age Pension Scheme",
+        code: "WEL_OAP",
         description: "Application and verification for monthly old age pension benefits",
         averageServiceTime: 15,
+        fee: 0,
+        expectedProcessingDays: 30,
+        requiredDocuments: ["Age Proof (Aadhaar / Voter ID - 60+ Years)", "Income Certificate (Below Poverty Line)", "Bank Passbook Copy"],
       },
       {
         departmentName: "Social Welfare",
         name: "Disability Welfare Assistance",
+        code: "WEL_DIS",
         description: "Aids, appliances and disability pension verification",
         averageServiceTime: 12,
+        fee: 0,
+        expectedProcessingDays: 21,
+        requiredDocuments: ["Medical Board Disability Certificate (40%+)", "Aadhaar Card", "Bank Account Details", "Passport Size Photos"],
       },
 
       // Taluk Administration Services
       {
         departmentName: "Taluk Administration",
         name: "Grievance Redressal",
+        code: "ADM_GRIEV",
         description: "Public petition submission to Tahsildar / Taluk Officers",
         averageServiceTime: 15,
+        fee: 0,
+        expectedProcessingDays: 15,
+        requiredDocuments: ["Grievance Application Letter", "Identity Proof", "Prior Complaint Acknowledgements"],
       },
       {
         departmentName: "Taluk Administration",
         name: "Other Government Services",
+        code: "ADM_GEN",
         description: "Enquiry and guidance for miscellaneous taluk services",
         averageServiceTime: 10,
+        fee: 0,
+        expectedProcessingDays: 7,
+        requiredDocuments: ["Aadhaar Card", "Requisition Letter"],
       },
 
       // Aadhaar Services
       {
         departmentName: "Aadhaar Services",
         name: "Aadhaar Apply",
+        code: "UID_ENROLL",
         description: "Apply for new 12-digit Aadhaar enrollment for citizens and children with biometric capture",
         averageServiceTime: 15,
+        fee: 0,
+        expectedProcessingDays: 15,
+        requiredDocuments: ["Proof of Identity (POI)", "Proof of Address (POA)", "Proof of Date of Birth (DOB)"],
       },
       {
         departmentName: "Aadhaar Services",
         name: "Aadhaar Update",
+        code: "UID_UPDATE",
         description: "Update mobile number, address, email ID, photo, or biometric details in existing Aadhaar",
         averageServiceTime: 10,
+        fee: 50,
+        expectedProcessingDays: 7,
+        requiredDocuments: ["Existing Aadhaar Card Copy", "Valid Supporting Document for Updated Field", "Active Mobile for OTP"],
       },
       {
         departmentName: "Aadhaar Services",
         name: "Aadhaar Correction",
+        code: "UID_CORRECT",
         description: "Correction of name spelling, date of birth, gender, and demographic details with documentary proof",
         averageServiceTime: 10,
+        fee: 50,
+        expectedProcessingDays: 7,
+        requiredDocuments: ["Gazette Notification / Birth Certificate (for name/DOB)", "Valid POI Document", "Existing Aadhaar"],
       },
     ];
 
@@ -186,15 +264,49 @@ const seedDatabase = async () => {
       if (!service) {
         service = await Service.create({
           name: s.name,
+          code: s.code,
           description: s.description,
           department: dept._id,
+          office: defaultOffice._id,
           averageServiceTime: s.averageServiceTime,
+          fee: s.fee,
+          expectedProcessingDays: s.expectedProcessingDays,
+          requiredDocuments: s.requiredDocuments,
+          walkInAvailable: true,
+          appointmentAvailable: true,
+          priorityEligible: true,
           isActive: true,
         });
         console.log(`✅ Created Service: ${s.name} under ${s.departmentName}`);
       } else {
-        console.log(`ℹ️ Service already exists: ${s.name}`);
+        service.office = defaultOffice._id;
+        service.code = s.code || service.code;
+        service.fee = s.fee !== undefined ? s.fee : service.fee;
+        service.expectedProcessingDays = s.expectedProcessingDays || 7;
+        service.requiredDocuments = s.requiredDocuments || service.requiredDocuments;
+        service.walkInAvailable = true;
+        service.appointmentAvailable = true;
+        service.priorityEligible = true;
+        await service.save();
+        console.log(`ℹ️ Service updated with catalog metadata: ${s.name}`);
       }
+    }
+
+    // 4. Test Citizen User (Arun Kumar)
+    let testCitizen = await User.findOne({ email: "citizen@test.com" });
+    if (!testCitizen) {
+      const hashedCitizenPassword = await bcrypt.hash("citizen123", 10);
+      testCitizen = await User.create({
+        fullName: "Arun Kumar",
+        email: "citizen@test.com",
+        phone: "9876543222",
+        password: hashedCitizenPassword,
+        role: "citizen",
+        isVerified: true,
+      });
+      console.log("✅ Created Test Citizen user: citizen@test.com / citizen123");
+    } else {
+      console.log("ℹ️ Test Citizen exists: citizen@test.com");
     }
 
     // 4. Test Officer Check & Assignment

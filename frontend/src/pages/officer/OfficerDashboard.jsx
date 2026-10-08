@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { officerService, tokenService } from "../../services/api";
+import { officerService, tokenService, applicationService } from "../../services/api";
 import { getSocket, joinDepartment, leaveDepartment } from "../../services/socket";
 import StatusBadge from "../../components/StatusBadge";
 import { useLanguage } from "../../context/LanguageContext";
@@ -19,6 +19,11 @@ import {
   AlertCircle,
   Users,
   Power,
+  FileText,
+  ShieldCheck,
+  Eye,
+  CheckCheck,
+  ExternalLink,
 } from "lucide-react";
 
 const OfficerDashboard = () => {
@@ -28,6 +33,10 @@ const OfficerDashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [message, setMessage] = useState(null);
+  const [activeTab, setActiveTab] = useState("queue"); // "queue" | "applications"
+  const [applications, setApplications] = useState([]);
+  const [selectedApp, setSelectedApp] = useState(null);
+  const [appRemarks, setAppRemarks] = useState("");
   const { t, tDeptName, tServiceName, language } = useLanguage();
 
   const fetchDashboard = useCallback(async () => {
@@ -223,6 +232,92 @@ const OfficerDashboard = () => {
     }
   };
 
+  const handleVerifyPriority = async (tokenId, priorityType) => {
+    try {
+      setActionLoading(true);
+      await tokenService.verifyPriority(tokenId, true, priorityType);
+      setMessage({
+        type: "success",
+        text: "Priority status verified! Token given higher priority in queue.",
+      });
+      fetchDashboard();
+    } catch (err) {
+      setMessage({
+        type: "error",
+        text: err.response?.data?.message || "Failed to verify priority",
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const fetchApplications = useCallback(async () => {
+    try {
+      const res = await applicationService.getAll();
+      if (res.success) {
+        setApplications(res.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to load applications:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === "applications") {
+      fetchApplications();
+    }
+  }, [activeTab, fetchApplications]);
+
+  const handleUpdateAppStatus = async (appId, status) => {
+    try {
+      setActionLoading(true);
+      await applicationService.updateStatus(appId, {
+        status,
+        remarks: appRemarks.trim() || undefined,
+      });
+      setMessage({
+        type: "success",
+        text: `Application status updated to ${status}. Notification sent to citizen.`,
+      });
+      fetchApplications();
+      setSelectedApp(null);
+      setAppRemarks("");
+    } catch (err) {
+      setMessage({
+        type: "error",
+        text: err.response?.data?.message || "Failed to update status",
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleVerifyDoc = async (docId, verificationStatus) => {
+    try {
+      setActionLoading(true);
+      await applicationService.verifyDocument(docId, {
+        verificationStatus,
+        verificationRemarks: "Verified by desk officer",
+      });
+      setMessage({
+        type: "success",
+        text: `Document marked as ${verificationStatus}.`,
+      });
+      fetchApplications();
+      if (selectedApp) {
+        const updated = await applicationService.getById(selectedApp._id);
+        if (updated.success) setSelectedApp(updated.data);
+      }
+    } catch (err) {
+      setMessage({
+        type: "error",
+        text: err.response?.data?.message || "Document verification failed",
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center">
@@ -393,201 +488,414 @@ const OfficerDashboard = () => {
         </div>
       </div>
 
-      {/* MAIN OFFICER WORKFLOW DESK */}
-      <div className="bg-white rounded-3xl border-2 border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-4">
-          <h2 className="text-xl font-bold text-slate-900 font-heading">
-            {t("officer", "currentActiveTokenTitle")}
-          </h2>
-          <span className="text-xs text-slate-500">{t("officer", "officerActionControls")}</span>
-        </div>
+      {/* Officer Desk Tabs */}
+      <div className="flex border-b border-slate-200 gap-2">
+        <button
+          onClick={() => setActiveTab("queue")}
+          className={`pb-3 px-4 font-bold text-sm flex items-center gap-2 border-b-2 transition-all ${
+            activeTab === "queue"
+              ? "border-purple-600 text-purple-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <Ticket className="w-4 h-4" />
+          <span>Live Counter & Queue</span>
+        </button>
 
-        {currentToken ? (
-          <div className="bg-slate-50/80 rounded-2xl border border-slate-200 p-6 space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
-                    {language === "ta" ? "டோக்கன் எண்" : "Token"} #{currentToken.tokenNumber}
-                  </span>
-                  <StatusBadge status={currentToken.status} />
-                </div>
+        <button
+          onClick={() => setActiveTab("applications")}
+          className={`pb-3 px-4 font-bold text-sm flex items-center gap-2 border-b-2 transition-all ${
+            activeTab === "applications"
+              ? "border-purple-600 text-purple-700"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>Service Applications & Scrutiny</span>
+          {applications.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-800 font-bold">
+              {applications.length}
+            </span>
+          )}
+        </button>
+      </div>
 
-                <div className="text-5xl font-black text-slate-900 font-heading">
-                  {currentToken.tokenDisplay}
-                </div>
-
-                <div className="text-xs text-slate-600 space-y-1">
-                  <p>
-                    {language === "ta" ? "குடிமகன்" : "Citizen"}:{" "}
-                    <strong className="text-slate-900">{currentToken.citizen?.fullName}</strong> (
-                    {language === "ta" ? "கைபேசி" : "Phone"}: {currentToken.citizen?.phone})
-                  </p>
-                  <p>
-                    {language === "ta" ? "சேவை" : "Service"}:{" "}
-                    <strong>{tServiceName(currentToken.service?.name)}</strong> (~
-                    {currentToken.service?.averageServiceTime || 10}{" "}
-                    {language === "ta" ? "நிமிடங்கள்" : "mins"})
-                  </p>
-                </div>
-              </div>
-
-              {/* Status timer / message */}
-              <div className="bg-white p-4 rounded-xl border border-slate-200 text-center min-w-[160px]">
-                <Clock className="w-5 h-5 text-indigo-600 mx-auto mb-1" />
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  {currentToken.status === "called"
-                    ? language === "ta"
-                      ? "அழைக்கப்பட்ட நேரம்"
-                      : "Called At"
-                    : language === "ta"
-                    ? "சேவை தொடக்கம்"
-                    : "Serving Since"}
-                </span>
-                <div className="text-sm font-bold text-slate-800">
-                  {currentToken.servingAt
-                    ? new Date(currentToken.servingAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                    : currentToken.calledAt
-                    ? new Date(currentToken.calledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                    : language === "ta"
-                    ? "சற்றுமுன்"
-                    : "Just now"}
-                </div>
-              </div>
+      {activeTab === "queue" ? (
+        <>
+          {/* MAIN OFFICER WORKFLOW DESK */}
+          <div className="bg-white rounded-3xl border-2 border-slate-200 p-6 sm:p-8 shadow-sm space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100 pb-4">
+              <h2 className="text-xl font-bold text-slate-900 font-heading">
+                {t("officer", "currentActiveTokenTitle")}
+              </h2>
+              <span className="text-xs text-slate-500">{t("officer", "officerActionControls")}</span>
             </div>
 
-            {/* ACTION BUTTONS (Phase 22 rules) */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-200">
-              {/* Button 1: Start Service */}
-              <button
-                onClick={() => handleStartService(currentToken._id)}
-                disabled={!canStartService || actionLoading}
-                className="py-3 px-4 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs flex items-center justify-center gap-2 transition-all"
-              >
-                <Play className="w-4 h-4 fill-white" />
-                <span>{t("officer", "startServiceBtn")}</span>
-              </button>
+            {currentToken ? (
+              <div className="bg-slate-50/80 rounded-2xl border border-slate-200 p-6 space-y-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+                        {language === "ta" ? "டோக்கன் எண்" : "Token"} #{currentToken.tokenNumber}
+                      </span>
+                      <StatusBadge status={currentToken.status} />
+                      {currentToken.priorityType && currentToken.priorityType !== "NORMAL" && (
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800">
+                          {currentToken.priorityType.replace(/_/g, " ")} {currentToken.priorityVerified ? "✓" : ""}
+                        </span>
+                      )}
+                    </div>
 
-              {/* Button 2: Complete Service */}
-              <button
-                onClick={() => handleCompleteService(currentToken._id)}
-                disabled={!canCompleteService || actionLoading}
-                className="py-3 px-4 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs flex items-center justify-center gap-2 transition-all"
-              >
-                <Check className="w-4 h-4" />
-                <span>{t("officer", "completeServiceBtn")}</span>
-              </button>
+                    <div className="text-5xl font-black text-slate-900 font-heading">
+                      {currentToken.tokenDisplay}
+                    </div>
 
-              {/* Button 3: Skip / No-show */}
-              <button
-                onClick={() => handleSkipToken(currentToken._id)}
-                disabled={!canSkip || actionLoading}
-                className="py-3 px-4 rounded-xl font-bold text-xs text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs flex items-center justify-center gap-2 transition-all"
-              >
-                <SkipForward className="w-4 h-4" />
-                <span>{t("officer", "skipBtn")}</span>
-              </button>
-            </div>
+                    <div className="text-xs text-slate-600 space-y-1">
+                      <p>
+                        {language === "ta" ? "குடிமகன்" : "Citizen"}:{" "}
+                        <strong className="text-slate-900">{currentToken.citizen?.fullName}</strong> (
+                        {language === "ta" ? "கைபேசி" : "Phone"}: {currentToken.citizen?.phone})
+                      </p>
+                      <p>
+                        {language === "ta" ? "சேவை" : "Service"}:{" "}
+                        <strong>{tServiceName(currentToken.service?.name)}</strong> (~
+                        {currentToken.service?.averageServiceTime || 10}{" "}
+                        {language === "ta" ? "நிமிடங்கள்" : "mins"})
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Status timer / message */}
+                  <div className="bg-white p-4 rounded-xl border border-slate-200 text-center min-w-[160px]">
+                    <Clock className="w-5 h-5 text-indigo-600 mx-auto mb-1" />
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      {currentToken.status === "called"
+                        ? language === "ta"
+                          ? "அழைக்கப்பட்ட நேரம்"
+                          : "Called At"
+                        : language === "ta"
+                        ? "சேவை தொடக்கம்"
+                        : "Serving Since"}
+                    </span>
+                    <div className="text-sm font-bold text-slate-800">
+                      {currentToken.servingAt
+                        ? new Date(currentToken.servingAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                        : currentToken.calledAt
+                        ? new Date(currentToken.calledAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                        : language === "ta"
+                        ? "சற்றுமுன்"
+                        : "Just now"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ACTION BUTTONS */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4 border-t border-slate-200">
+                  <button
+                    onClick={() => handleStartService(currentToken._id)}
+                    disabled={!canStartService || actionLoading}
+                    className="py-3 px-4 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Play className="w-4 h-4 fill-white" />
+                    <span>{t("officer", "startServiceBtn")}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleCompleteService(currentToken._id)}
+                    disabled={!canCompleteService || actionLoading}
+                    className="py-3 px-4 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>{t("officer", "completeServiceBtn")}</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleSkipToken(currentToken._id)}
+                    disabled={!canSkip || actionLoading}
+                    className="py-3 px-4 rounded-xl font-bold text-xs text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs flex items-center justify-center gap-2 transition-all"
+                  >
+                    <SkipForward className="w-4 h-4" />
+                    <span>{t("officer", "skipBtn")}</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-slate-50 rounded-2xl border border-slate-200 p-8 text-center space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 mx-auto flex items-center justify-center">
+                  <PhoneCall className="w-7 h-7" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">{t("officer", "deskReadyTitle")}</h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                    {waitingCount > 0
+                      ? language === "ta"
+                        ? `வரிசையில் ${waitingCount} குடிமக்கள் காத்திருக்கின்றனர். அடுத்த டோக்கனை அழைக்க கீழே கிளிக் செய்யவும்.`
+                        : `There are ${waitingCount} citizens waiting in line. Click below to announce the next token.`
+                      : t("officer", "noWaitingInDept")}
+                  </p>
+                </div>
+
+                <div>
+                  <button
+                    onClick={handleCallNext}
+                    disabled={!canCallNext || actionLoading}
+                    className="px-8 py-3.5 rounded-xl font-black text-sm text-slate-950 bg-amber-400 hover:bg-amber-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2"
+                  >
+                    {actionLoading ? (
+                      <span className="inline-block w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+                    ) : (
+                      <>
+                        <PhoneCall className="w-4 h-4" />
+                        <span>
+                          {language === "ta"
+                            ? `அடுத்த டோக்கனை அழைக்கவும் (${waitingCount} பேர் காத்திருப்பில்)`
+                            : `CALL NEXT TOKEN (${waitingCount} WAITING)`}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        ) : (
-          /* When no token is active at counter, Call Next button is prominent */
-          <div className="bg-slate-50 rounded-2xl border border-slate-200 p-8 text-center space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200 mx-auto flex items-center justify-center">
-              <PhoneCall className="w-7 h-7" />
+
+          {/* Department Queue Table */}
+          <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-bold text-slate-900 font-heading">
+                {t("officer", "deptWaitingQueue")} ({tDeptName(officer?.department?.name)})
+              </h3>
+              <span className="text-xs text-slate-500 font-medium">
+                {language === "ta" ? "மொத்த செயலில் உள்ளவை" : "Total Active"}: {queue.length}
+              </span>
             </div>
+
+            {queue.length === 0 ? (
+              <div className="text-center py-8 text-xs text-slate-400">
+                {t("officer", "queueEmptyDept")}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
+                      <th className="py-3 px-3">{language === "ta" ? "டோக்கன் #" : "Token #"}</th>
+                      <th className="py-3 px-3">{language === "ta" ? "குடிமகன்" : "Citizen"}</th>
+                      <th className="py-3 px-3">{language === "ta" ? "கைபேசி" : "Phone"}</th>
+                      <th className="py-3 px-3">{language === "ta" ? "சேவை" : "Service"}</th>
+                      <th className="py-3 px-3">Priority / Category</th>
+                      <th className="py-3 px-3">{language === "ta" ? "கவுண்டர்" : "Counter"}</th>
+                      <th className="py-3 px-3">{language === "ta" ? "நிலை" : "Status"}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {queue.map((queueItem) => (
+                      <tr key={queueItem._id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3.5 px-3 font-extrabold text-sm text-slate-900">
+                          {queueItem.tokenDisplay}
+                        </td>
+                        <td className="py-3.5 px-3 font-medium text-slate-800">
+                          {queueItem.citizen?.fullName}
+                        </td>
+                        <td className="py-3.5 px-3 text-slate-500">{queueItem.citizen?.phone}</td>
+                        <td className="py-3.5 px-3 text-slate-700">{tServiceName(queueItem.service?.name)}</td>
+                        <td className="py-3.5 px-3">
+                          {queueItem.priorityType && queueItem.priorityType !== "NORMAL" ? (
+                            queueItem.priorityVerified ? (
+                              <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-800">
+                                ✓ {queueItem.priorityType.replace(/_/g, " ")}
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleVerifyPriority(queueItem._id, queueItem.priorityType)}
+                                className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 hover:bg-amber-200 text-amber-900 transition-colors"
+                              >
+                                Verify {queueItem.priorityType.replace(/_/g, " ")}
+                              </button>
+                            )
+                          ) : (
+                            <span className="text-slate-400">Normal FIFO</span>
+                          )}
+                        </td>
+                        <td className="py-3.5 px-3 text-slate-700">
+                          {queueItem.counter ? (
+                            <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
+                              {queueItem.counter.name}
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td className="py-3.5 px-3">
+                          <StatusBadge status={queueItem.status} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        /* Applications Review Panel */
+        <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 space-y-6 shadow-sm">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-4">
             <div>
-              <h3 className="text-lg font-bold text-slate-900">{t("officer", "deskReadyTitle")}</h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-                {waitingCount > 0
-                  ? language === "ta"
-                    ? `வரிசையில் ${waitingCount} குடிமக்கள் காத்திருக்கின்றனர். அடுத்த டோக்கனை அழைக்க கீழே கிளிக் செய்யவும்.`
-                    : `There are ${waitingCount} citizens waiting in line. Click below to announce the next token.`
-                  : t("officer", "noWaitingInDept")}
+              <h3 className="text-lg font-bold text-slate-900">
+                Government Service Applications & Document Scrutiny
+              </h3>
+              <p className="text-xs text-slate-500">
+                Review submitted citizen files, verify supporting documents, and approve certificates
               </p>
             </div>
+            <button
+              onClick={fetchApplications}
+              className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            >
+              Refresh Applications
+            </button>
+          </div>
 
-            <div>
-              <button
-                onClick={handleCallNext}
-                disabled={!canCallNext || actionLoading}
-                className="px-8 py-3.5 rounded-xl font-black text-sm text-slate-950 bg-amber-400 hover:bg-amber-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2"
-              >
-                {actionLoading ? (
-                  <span className="inline-block w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
-                ) : (
-                  <>
-                    <PhoneCall className="w-4 h-4" />
-                    <span>
-                      {language === "ta"
-                        ? `அடுத்த டோக்கனை அழைக்கவும் (${waitingCount} பேர் காத்திருப்பில்)`
-                        : `CALL NEXT TOKEN (${waitingCount} WAITING)`}
-                    </span>
-                  </>
-                )}
-              </button>
+          {applications.length === 0 ? (
+            <div className="text-center py-12 text-slate-400 text-xs">
+              No online service applications submitted for this department yet.
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Department Queue Table */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-4">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-bold text-slate-900 font-heading">
-            {t("officer", "deptWaitingQueue")} ({tDeptName(officer?.department?.name)})
-          </h3>
-          <span className="text-xs text-slate-500 font-medium">
-            {language === "ta" ? "மொத்த செயலில் உள்ளவை" : "Total Active"}: {queue.length}
-          </span>
-        </div>
-
-        {queue.length === 0 ? (
-          <div className="text-center py-8 text-xs text-slate-400">
-            {t("officer", "queueEmptyDept")}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
-                  <th className="py-3 px-3">{language === "ta" ? "டோக்கன் #" : "Token #"}</th>
-                  <th className="py-3 px-3">{language === "ta" ? "குடிமகன்" : "Citizen"}</th>
-                  <th className="py-3 px-3">{language === "ta" ? "கைபேசி" : "Phone"}</th>
-                  <th className="py-3 px-3">{language === "ta" ? "சேவை" : "Service"}</th>
-                  <th className="py-3 px-3">{language === "ta" ? "கவுண்டர்" : "Counter"}</th>
-                  <th className="py-3 px-3">{language === "ta" ? "நிலை" : "Status"}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {queue.map((queueItem) => (
-                  <tr key={queueItem._id} className="hover:bg-slate-50/60 transition-colors">
-                    <td className="py-3.5 px-3 font-extrabold text-sm text-slate-900">
-                      {queueItem.tokenDisplay}
-                    </td>
-                    <td className="py-3.5 px-3 font-medium text-slate-800">
-                      {queueItem.citizen?.fullName}
-                    </td>
-                    <td className="py-3.5 px-3 text-slate-500">{queueItem.citizen?.phone}</td>
-                    <td className="py-3.5 px-3 text-slate-700">{tServiceName(queueItem.service?.name)}</td>
-                    <td className="py-3.5 px-3 text-slate-700">
-                      {queueItem.counter ? (
-                        <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
-                          {queueItem.counter.name}
+          ) : (
+            <div className="space-y-4">
+              {applications.map((app) => (
+                <div
+                  key={app._id}
+                  className="p-5 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 transition-all space-y-4"
+                >
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold px-2.5 py-1 rounded bg-gov-100 text-gov-800">
+                        {app.applicationNumber}
+                      </span>
+                      <StatusBadge status={app.status} />
+                      {app.priorityType && app.priorityType !== "NORMAL" && (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-purple-100 text-purple-800">
+                          {app.priorityType}
                         </span>
-                      ) : (
-                        "—"
                       )}
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <StatusBadge status={queueItem.status} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                    </div>
+                    <span className="text-xs text-slate-400">
+                      Submitted: {new Date(app.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <span className="text-slate-400 block">Applicant:</span>
+                      <strong className="text-slate-800">{app.citizen?.fullName}</strong> (
+                      {app.citizen?.phone})
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block">Service:</span>
+                      <strong className="text-slate-800">{app.service?.name}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block">Attached Documents:</span>
+                      <strong className="text-gov-700">
+                        {app.documents?.length || 0} files attached
+                      </strong>
+                    </div>
+                  </div>
+
+                  {/* Documents List & Verification */}
+                  {app.documents && app.documents.length > 0 && (
+                    <div className="p-3 bg-white rounded-xl border border-slate-200 space-y-2">
+                      <span className="text-xs font-bold text-slate-700 block">
+                        Supporting Documents for Verification:
+                      </span>
+                      <div className="space-y-1.5">
+                        {app.documents.map((doc) => (
+                          <div
+                            key={doc._id}
+                            className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100 text-xs"
+                          >
+                            <div className="flex items-center gap-2">
+                              <FileText className="w-3.5 h-3.5 text-gov-700" />
+                              <span className="font-semibold text-slate-800">{doc.documentType}</span>
+                              <span
+                                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  doc.verificationStatus === "VERIFIED"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : doc.verificationStatus === "REJECTED"
+                                    ? "bg-rose-100 text-rose-800"
+                                    : "bg-amber-100 text-amber-800"
+                                }`}
+                              >
+                                {doc.verificationStatus}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <a
+                                href={doc.filePath?.startsWith("http") ? doc.filePath : `http://localhost:5000/${doc.filePath}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-2 py-1 rounded text-[11px] font-semibold text-gov-700 hover:bg-gov-50 flex items-center gap-1"
+                              >
+                                <Eye className="w-3 h-3" />
+                                View
+                              </a>
+                              {doc.verificationStatus !== "VERIFIED" && (
+                                <button
+                                  onClick={() => handleVerifyDoc(doc._id, "VERIFIED")}
+                                  className="px-2 py-1 rounded text-[11px] font-bold bg-emerald-600 text-white hover:bg-emerald-700"
+                                >
+                                  Verify
+                                </button>
+                              )}
+                              {doc.verificationStatus !== "REJECTED" && (
+                                <button
+                                  onClick={() => handleVerifyDoc(doc._id, "REJECTED")}
+                                  className="px-2 py-1 rounded text-[11px] font-bold bg-rose-50 text-rose-700 hover:bg-rose-100"
+                                >
+                                  Reject
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Officer Actions on Application */}
+                  <div className="pt-2 flex flex-wrap items-center gap-2 border-t border-slate-200">
+                    <span className="text-xs font-bold text-slate-700 mr-2">Action:</span>
+                    <button
+                      onClick={() => handleUpdateAppStatus(app._id, "APPROVED")}
+                      disabled={actionLoading}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                    >
+                      Approve Application
+                    </button>
+                    <button
+                      onClick={() => handleUpdateAppStatus(app._id, "ADDITIONAL_INFO_REQUIRED")}
+                      disabled={actionLoading}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-xs"
+                    >
+                      Request Additional Info
+                    </button>
+                    <button
+                      onClick={() => handleUpdateAppStatus(app._id, "REJECTED")}
+                      disabled={actionLoading}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-xs"
+                    >
+                      Reject Application
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

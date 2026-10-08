@@ -9,6 +9,7 @@ const {
   startService,
   completeService,
   skipToken,
+  verifyTokenPriority,
 } = require("../controllers/tokenController");
 
 const { protect, authorize } = require("../middleware/authMiddleware");
@@ -31,5 +32,6 @@ router.post("/call-next", protect, authorize("officer", "admin"), callNextToken)
 router.post("/:id/start", protect, authorize("officer", "admin"), startService);
 router.post("/:id/complete", protect, authorize("officer", "admin"), completeService);
 router.post("/:id/skip", protect, authorize("officer", "admin"), skipToken);
+router.patch("/:id/verify-priority", protect, authorize("officer", "admin"), verifyTokenPriority);
 
 module.exports = router;

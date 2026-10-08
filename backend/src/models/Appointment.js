@@ -43,6 +43,45 @@ const appointmentSchema = new mongoose.Schema(
       default: "",
     },
 
+    office: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "GovernmentOffice",
+      default: null,
+    },
+
+    priorityType: {
+      type: String,
+      set: (v) => {
+        if (!v) return "normal";
+        const clean = v.toLowerCase().replace(/[-\s]/g, "_");
+        if (clean === "disability" || clean === "pwd") return "differently_abled";
+        if (clean === "pregnant") return "pregnant_woman";
+        return clean;
+      },
+      enum: [
+        "normal",
+        "senior_citizen",
+        "differently_abled",
+        "pregnant_woman",
+        "emergency",
+        "disability",
+        "pregnant",
+        "NORMAL",
+        "SENIOR_CITIZEN",
+        "DIFFERENTLY_ABLED",
+        "PREGNANT_WOMAN",
+        "EMERGENCY",
+        "DISABILITY",
+        "PREGNANT",
+      ],
+      default: "normal",
+    },
+
+    priorityVerified: {
+      type: Boolean,
+      default: false,
+    },
+
     status: {
       type: String,
       enum: [
@@ -54,6 +93,16 @@ const appointmentSchema = new mongoose.Schema(
         "no_show",
       ],
       default: "booked",
+    },
+
+    checkedInAt: {
+      type: Date,
+      default: null,
+    },
+
+    completedAt: {
+      type: Date,
+      default: null,
     },
   },
   {

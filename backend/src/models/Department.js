@@ -23,6 +23,12 @@ const departmentSchema = new mongoose.Schema(
       required: true,
     },
 
+    office: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "GovernmentOffice",
+      default: null,
+    },
+
     isActive: {
       type: Boolean,
       default: true,

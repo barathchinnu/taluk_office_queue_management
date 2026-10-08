@@ -17,7 +17,11 @@ import {
   HelpCircle,
   CheckCircle2,
   Sparkles,
+  Star,
+  FileText,
+  BookOpen,
 } from "lucide-react";
+import FeedbackModal from "../../components/FeedbackModal";
 
 const CitizenDashboard = () => {
   const [activeToken, setActiveToken] = useState(null);
@@ -26,6 +30,7 @@ const CitizenDashboard = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [checkInLoading, setCheckInLoading] = useState(null);
   const [message, setMessage] = useState(null);
+  const [showFeedback, setShowFeedback] = useState(false);
   const { t, tDeptName, tServiceName, language } = useLanguage();
 
   const fetchData = useCallback(async () => {
@@ -188,11 +193,23 @@ const CitizenDashboard = () => {
 
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs uppercase tracking-widest font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full">
                   {t("citizen", "activeLiveToken")}
                 </span>
                 <StatusBadge status={activeToken.status} />
+                {activeToken.priorityType && activeToken.priorityType !== "NORMAL" && (
+                  <span
+                    className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
+                      activeToken.priorityVerified
+                        ? "bg-purple-100 text-purple-800 border-purple-200"
+                        : "bg-amber-100 text-amber-800 border-amber-200"
+                    }`}
+                  >
+                    {activeToken.priorityType.replace(/_/g, " ")}{" "}
+                    {activeToken.priorityVerified ? "✓ Priority" : "(Pending Verification)"}
+                  </span>
+                )}
               </div>
 
               <div className="flex items-baseline gap-3">
@@ -253,9 +270,9 @@ const CitizenDashboard = () => {
             </div>
           </div>
 
-          {/* Status Instruction Callout */}
+          {/* Status Instruction Callout & Feedback button */}
           <div className="mt-6 pt-4 border-t border-slate-200/80 flex flex-col sm:flex-row justify-between items-start sm:items-center text-xs text-slate-600 gap-3">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {activeToken.status === "called" ? (
                 <span className="text-blue-700 font-bold flex items-center gap-1.5 animate-bounce">
                   {t("citizen", "calloutProceed")}
@@ -265,10 +282,17 @@ const CitizenDashboard = () => {
                   {t("citizen", "calloutServing")}
                 </span>
               ) : (
-                <span>
-                  {t("citizen", "calloutWaiting")}
-                </span>
+                <span>{t("citizen", "calloutWaiting")}</span>
               )}
+
+              <button
+                type="button"
+                onClick={() => setShowFeedback(true)}
+                className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 font-semibold flex items-center gap-1 transition-colors"
+              >
+                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                Rate Service
+              </button>
             </div>
 
             <Link
@@ -477,6 +501,16 @@ const CitizenDashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedback}
+        onClose={() => setShowFeedback(false)}
+        token={activeToken}
+        service={activeToken?.service}
+        department={activeToken?.department}
+        officer={activeToken?.counter?.officer}
+      />
     </div>
   );
 };

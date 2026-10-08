@@ -5,6 +5,10 @@ const Department = require("../models/Department");
 const Service = require("../models/Service");
 const Token = require("../models/Token");
 const { notifyQueueUpdate } = require("../sockets/socket");
+const {
+  notifyAppointmentConfirmed,
+  notifyAppointmentCancelled,
+} = require("../services/notificationService");
 
 // Helper for today's date range
 const getDayBounds = (date = new Date()) => {
@@ -94,10 +98,32 @@ const createAppointment = async (req, res) => {
       });
     }
 
+    // Check daily booking capacity for this service (prevent overbooking)
+    const { startOfDay, endOfDay } = getDayBounds(selectedDate);
+    const existingBookingsCount = await Appointment.countDocuments({
+      service,
+      appointmentDate: { $gte: startOfDay, $lte: endOfDay },
+      status: { $in: ["booked", "confirmed"] },
+    });
+
+    const maxDailyCapacity = 30; // configurable service daily capacity
+    if (existingBookingsCount >= maxDailyCapacity) {
+      return res.status(400).json({
+        success: false,
+        message: `Maximum appointment capacity (${maxDailyCapacity}) reached for this service on the selected date. Please choose another date.`,
+      });
+    }
+
+    const { office, priorityType } = req.body;
+    const validPriorities = ["normal", "senior_citizen", "differently_abled", "pregnant_woman", "emergency"];
+    const pType = validPriorities.includes(priorityType) ? priorityType : "normal";
+
     const appointment = await Appointment.create({
       citizen: citizenId,
       department,
       service,
+      office: office || departmentExists.office || null,
+      priorityType: pType,
       appointmentDate: selectedDate,
       appointmentTime: appointmentTime || "10:00 AM",
       purpose: purpose || notes || "",
@@ -109,6 +135,9 @@ const createAppointment = async (req, res) => {
       .populate("citizen", "fullName email phone")
       .populate("department", "name code")
       .populate("service", "name averageServiceTime");
+
+    // Trigger notification to citizen
+    notifyAppointmentConfirmed(populatedAppointment).catch(() => {});
 
     res.status(201).json({
       success: true,
@@ -292,6 +321,9 @@ const cancelAppointment = async (req, res) => {
 
     appointment.status = "cancelled";
     await appointment.save();
+
+    // Trigger notification
+    notifyAppointmentCancelled(appointment).catch(() => {});
 
     res.status(200).json({
       success: true,

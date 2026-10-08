@@ -21,6 +21,12 @@ const counterSchema = new mongoose.Schema(
       required: true,
     },
 
+    office: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "GovernmentOffice",
+      default: null,
+    },
+
     officer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Officer",

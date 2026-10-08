@@ -12,6 +12,12 @@ const tokenRoutes = require("./routes/tokenRoutes");
 const citizenRoutes = require("./routes/citizenRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const aadhaarRoutes = require("./routes/aadhaarRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
+const officeRoutes = require("./routes/officeRoutes");
+const applicationRoutes = require("./routes/applicationRoutes");
+const feedbackRoutes = require("./routes/feedbackRoutes");
+const serviceCatalogRoutes = require("./routes/serviceCatalogRoutes");
+const path = require("path");
 
 const app = express();
 
@@ -19,6 +25,9 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Static uploads directory
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // API Routes
 app.use("/api/auth", authRoutes);
@@ -31,6 +40,11 @@ app.use("/api/tokens", tokenRoutes);
 app.use("/api/citizens", citizenRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/aadhaar", aadhaarRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/offices", officeRoutes);
+app.use("/api/applications", applicationRoutes);
+app.use("/api/feedback", feedbackRoutes);
+app.use("/api/service-catalog", serviceCatalogRoutes);
 
 // Root Health Check
 app.get("/", (req, res) => {

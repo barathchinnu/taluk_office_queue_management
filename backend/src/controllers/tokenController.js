@@ -6,6 +6,13 @@ const Service = require("../models/Service");
 const Counter = require("../models/Counter");
 const Officer = require("../models/Officer");
 const { notifyQueueUpdate } = require("../sockets/socket");
+const {
+  notifyTokenGenerated,
+  notifyTokenNear,
+  notifyTokenCalled,
+  notifyServiceStarted,
+  notifyServiceCompleted,
+} = require("../services/notificationService");
 
 // Helper to get today's start and end timestamps
 const getDayBounds = (date = new Date()) => {
@@ -146,6 +153,13 @@ const generateToken = async (req, res) => {
 
     const tokenDisplay = `${deptPrefix}${String(nextTokenNumber).padStart(3, "0")}`;
 
+    // Priority handling
+    const rawPriority = req.body.priorityType || (linkedAppointment ? linkedAppointment.priorityType : "normal");
+    const validPriorities = ["normal", "senior_citizen", "differently_abled", "pregnant_woman", "emergency"];
+    const pType = validPriorities.includes(rawPriority) ? rawPriority : "normal";
+    const isStaff = req.user && ["officer", "admin"].includes(req.user.role);
+    const isPriorityVerified = isStaff && pType !== "normal";
+
     // Create the token
     const token = await Token.create({
       tokenNumber: nextTokenNumber,
@@ -153,7 +167,11 @@ const generateToken = async (req, res) => {
       citizen: citizenId,
       department: department._id,
       service: service._id,
+      office: req.body.office || department.office || null,
       appointment: linkedAppointment ? linkedAppointment._id : null,
+      priorityType: pType,
+      priorityVerified: isPriorityVerified,
+      priorityApprovedBy: isPriorityVerified ? req.user._id : null,
       queueDate: new Date(),
       status: "waiting",
     });
@@ -161,6 +179,7 @@ const generateToken = async (req, res) => {
     // If linked to appointment, update appointment status
     if (linkedAppointment) {
       linkedAppointment.status = "checked_in";
+      linkedAppointment.checkedInAt = new Date();
       await linkedAppointment.save();
     }
 
@@ -172,6 +191,9 @@ const generateToken = async (req, res) => {
 
     // Real-time notification via Socket.IO
     notifyQueueUpdate(department._id, "tokenCreated", populatedToken);
+
+    // Multi-channel notification to citizen
+    notifyTokenGenerated(populatedToken, citizenId).catch(() => {});
 
     return res.status(201).json({
       success: true,
@@ -212,12 +234,20 @@ const getMyToken = async (req, res) => {
       });
     }
 
-    // People ahead: tokens in waiting status with lower tokenNumber for same department today
+    // People ahead: verified priority tokens ahead or lower tokenNumber among same priority status
+    const isPriority = Boolean(token.priorityVerified);
     const peopleAhead = await Token.countDocuments({
       department: token.department._id,
       queueDate: { $gte: startOfDay, $lte: endOfDay },
       status: "waiting",
-      tokenNumber: { $lt: token.tokenNumber },
+      ...(isPriority
+        ? { priorityVerified: true, tokenNumber: { $lt: token.tokenNumber } }
+        : {
+            $or: [
+              { priorityVerified: true },
+              { priorityVerified: false, tokenNumber: { $lt: token.tokenNumber } },
+            ],
+          }),
     });
 
     const averageTime = token.service?.averageServiceTime || 10;
@@ -233,6 +263,8 @@ const getMyToken = async (req, res) => {
         department: token.department,
         service: token.service,
         counter: token.counter,
+        priorityType: token.priorityType || "normal",
+        priorityVerified: token.priorityVerified || false,
         calledAt: token.calledAt,
         servingAt: token.servingAt,
         createdAt: token.createdAt,
@@ -495,12 +527,12 @@ const callNextToken = async (req, res) => {
       });
     }
 
-    // 4. Find first waiting token for officer's department
+    // 4. Find first waiting token for officer's department (priority verified tokens first, then FIFO)
     const nextToken = await Token.findOne({
       department: officer.department,
       status: "waiting",
       queueDate: { $gte: startOfDay, $lte: endOfDay },
-    }).sort({ tokenNumber: 1 });
+    }).sort({ priorityVerified: -1, tokenNumber: 1 });
 
     if (!nextToken) {
       return res.status(200).json({
@@ -526,6 +558,24 @@ const callNextToken = async (req, res) => {
       .populate("counter", "counterNumber name");
 
     notifyQueueUpdate(officer.department, "tokenCalled", populatedToken);
+
+    // Send instant notification to citizen
+    notifyTokenCalled(populatedToken, counter).catch(() => {});
+
+    // Notify citizens next in line (e.g. 1 or 2 ahead)
+    Token.find({
+      department: officer.department,
+      status: "waiting",
+      queueDate: { $gte: startOfDay, $lte: endOfDay },
+    })
+      .sort({ priorityVerified: -1, tokenNumber: 1 })
+      .limit(2)
+      .then((upcoming) => {
+        upcoming.forEach((ut, idx) => {
+          notifyTokenNear(ut, idx + 1).catch(() => {});
+        });
+      })
+      .catch(() => {});
 
     return res.status(200).json({
       success: true,
@@ -573,6 +623,7 @@ const startService = async (req, res) => {
 
     token.status = "serving";
     token.servingAt = new Date();
+    token.startedAt = new Date();
     await token.save();
 
     const populatedToken = await Token.findById(token._id)
@@ -582,6 +633,9 @@ const startService = async (req, res) => {
       .populate("counter", "counterNumber name");
 
     notifyQueueUpdate(token.department, "serviceStarted", populatedToken);
+
+    // Notify citizen
+    notifyServiceStarted(populatedToken, populatedToken.counter).catch(() => {});
 
     return res.status(200).json({
       success: true,
@@ -648,6 +702,9 @@ const completeService = async (req, res) => {
       .populate("counter", "counterNumber name");
 
     notifyQueueUpdate(token.department, "serviceCompleted", populatedToken);
+
+    // Notify citizen that service is complete
+    notifyServiceCompleted(populatedToken, populatedToken.counter).catch(() => {});
 
     return res.status(200).json({
       success: true,
@@ -729,6 +786,58 @@ const skipToken = async (req, res) => {
   }
 };
 
+// =====================================================
+// VERIFY TOKEN PRIORITY (Officer / Admin)
+// =====================================================
+const verifyTokenPriority = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { priorityVerified, priorityType } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid token ID",
+      });
+    }
+
+    const token = await Token.findById(id);
+    if (!token) {
+      return res.status(404).json({
+        success: false,
+        message: "Token not found",
+      });
+    }
+
+    if (priorityType) {
+      token.priorityType = priorityType;
+    }
+    token.priorityVerified = priorityVerified !== undefined ? Boolean(priorityVerified) : true;
+    token.priorityApprovedBy = req.user._id;
+    await token.save();
+
+    const populatedToken = await Token.findById(token._id)
+      .populate("citizen", "fullName phone email")
+      .populate("department", "name code")
+      .populate("service", "name averageServiceTime")
+      .populate("counter", "counterNumber name");
+
+    notifyQueueUpdate(token.department, "tokenUpdated", populatedToken);
+
+    return res.status(200).json({
+      success: true,
+      message: "Priority status updated successfully",
+      token: populatedToken,
+    });
+  } catch (error) {
+    console.error("Verify Priority Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
 module.exports = {
   generateToken,
   getMyToken,
@@ -738,4 +847,5 @@ module.exports = {
   startService,
   completeService,
   skipToken,
+  verifyTokenPriority,
 };
