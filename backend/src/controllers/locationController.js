@@ -22,13 +22,6 @@ const seedInitialLocations = async () => {
   }
 };
 
-    console.log("✅ Tamil Nadu location hierarchy initialized successfully!");
-    return tnState;
-  } catch (err) {
-    console.error("Location Seeding Error:", err);
-  }
-};
-
 // =====================================================
 // GET STATES
 // =====================================================
