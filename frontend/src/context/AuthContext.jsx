@@ -48,6 +48,17 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const loginWithOtp = async (otpData) => {
+    const data = await authService.verifyOtp(otpData);
+    if (data.success && data.token) {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      setToken(data.token);
+      setUser(data.user);
+    }
+    return data;
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -62,6 +73,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!token && !!user,
     loading,
     login,
+    loginWithOtp,
     register,
     logout,
   };

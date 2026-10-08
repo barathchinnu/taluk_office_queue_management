@@ -6,7 +6,8 @@ import { LocationProvider } from "./context/LocationContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
 import CitizenSidebar from "./components/CitizenSidebar";
-import LocationHeader from "./components/LocationHeader";
+import OfficerSidebar from "./components/OfficerSidebar";
+import AdminSidebar from "./components/AdminSidebar";
 import LocationSelectorModal from "./components/LocationSelectorModal";
 import Footer from "./components/Footer";
 
@@ -35,7 +36,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 
 const Layout = ({ children }) => {
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const isDisplayScreen = location.pathname.startsWith("/display");
 
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -65,11 +66,19 @@ const Layout = ({ children }) => {
     return <main>{children}</main>;
   }
 
+  // Choose sidebar component by role
+  const SidebarComponent =
+    user?.role === "admin"
+      ? AdminSidebar
+      : user?.role === "officer"
+      ? OfficerSidebar
+      : CitizenSidebar;
+
   if (isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 text-slate-900 flex">
-        {/* Left Sidebar */}
-        <CitizenSidebar
+        {/* Role-Specific Left Sidebar */}
+        <SidebarComponent
           mobileOpen={mobileSidebarOpen}
           onCloseMobile={() => setMobileSidebarOpen(false)}
           collapsed={sidebarCollapsed}
@@ -79,7 +88,6 @@ const Layout = ({ children }) => {
         {/* Content Area */}
         <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
           <Navbar onToggleMobileSidebar={() => setMobileSidebarOpen((prev) => !prev)} />
-          <LocationHeader />
           <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
             {children}
           </main>
@@ -95,7 +103,6 @@ const Layout = ({ children }) => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900">
       <Navbar onToggleMobileSidebar={() => setMobileSidebarOpen((prev) => !prev)} />
-      <LocationHeader />
       <main className="flex-1">{children}</main>
       <Footer />
       <LocationSelectorModal />

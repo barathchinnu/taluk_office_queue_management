@@ -45,6 +45,14 @@ export const authService = {
     const res = await api.post("/auth/login", { email, password });
     return res.data;
   },
+  sendOtp: async (data) => {
+    const res = await api.post("/auth/send-otp", data);
+    return res.data;
+  },
+  verifyOtp: async (data) => {
+    const res = await api.post("/auth/verify-otp", data);
+    return res.data;
+  },
   register: async (userData) => {
     const res = await api.post("/auth/register", userData);
     return res.data;
