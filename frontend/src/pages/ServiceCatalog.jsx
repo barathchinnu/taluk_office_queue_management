@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { serviceCatalogService } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useLocation as useGeoLocation } from "../context/LocationContext";
+import ServiceDetailModal from "../components/ServiceDetailModal";
 import {
   Search,
   BookOpen,
@@ -333,165 +334,10 @@ const ServiceCatalog = () => {
 
         {/* SERVICE DETAIL & ACTION MODAL */}
         {selectedServiceModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
-            <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
-              {/* Modal Header */}
-              <div className="p-6 bg-gradient-to-r from-gov-900 via-indigo-950 to-gov-800 text-white flex items-start justify-between">
-                <div className="space-y-1.5">
-                  <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-white/10 text-amber-300 text-[11px] font-bold uppercase tracking-wider border border-white/10">
-                    {selectedServiceModal.department?.name || "Government Department"}
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-bold tracking-tight">
-                    {selectedServiceModal.name}
-                  </h2>
-                  <div className="flex items-center gap-2 text-xs text-slate-300">
-                    <MapPin className="w-3.5 h-3.5 text-amber-400" />
-                    <span>{officeName}</span>
-                    <span>•</span>
-                    <span>Code: {selectedServiceModal.code || "SRV"}</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSelectedServiceModal(null)}
-                  className="p-2 rounded-full hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              {/* Modal Body */}
-              <div className="p-6 overflow-y-auto space-y-6">
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
-                    Service Overview
-                  </h4>
-                  <p className="text-sm text-slate-700 leading-relaxed">
-                    {selectedServiceModal.description ||
-                      "Official government service offered at the Taluk Office headquarters. Citizens can apply online with digital verification or visit the physical counter."}
-                  </p>
-                </div>
-
-                {/* Key Metrics */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <span className="text-[11px] font-semibold text-slate-500 block">Govt Fee</span>
-                    <span className="text-base font-extrabold text-slate-900 flex items-center gap-0.5 mt-0.5">
-                      <IndianRupee className="w-4 h-4 text-emerald-600" />
-                      {selectedServiceModal.fee === 0 ? "Free" : `₹${selectedServiceModal.fee}`}
-                    </span>
-                  </div>
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <span className="text-[11px] font-semibold text-slate-500 block">Counter Time</span>
-                    <span className="text-base font-extrabold text-slate-900 flex items-center gap-1 mt-0.5">
-                      <Clock className="w-4 h-4 text-amber-500" />
-                      {selectedServiceModal.estimatedDuration || 15} mins
-                    </span>
-                  </div>
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                    <span className="text-[11px] font-semibold text-slate-500 block">Resolution</span>
-                    <span className="text-base font-extrabold text-slate-900 flex items-center gap-1 mt-0.5">
-                      <Calendar className="w-4 h-4 text-indigo-500" />
-                      {selectedServiceModal.expectedProcessingDays || 7} days
-                    </span>
-                  </div>
-                </div>
-
-                {/* Required Documents Checklist */}
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-gov-700" />
-                    Mandatory Documents & Eligibility Checklist
-                  </h4>
-                  <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200/70 space-y-2">
-                    {selectedServiceModal.requiredDocuments && selectedServiceModal.requiredDocuments.length > 0 ? (
-                      selectedServiceModal.requiredDocuments.map((doc, idx) => (
-                        <div key={idx} className="flex items-start gap-2 text-xs text-slate-800">
-                          <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                          <span className="font-medium">{doc}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="flex items-start gap-2 text-xs text-slate-800">
-                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                        <span className="font-medium">Valid Aadhaar Card / Government Photo Identity Proof</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Office Location Confirmation */}
-                <div className="p-3.5 rounded-2xl bg-gov-50 border border-gov-100 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4 text-gov-700 shrink-0" />
-                    <div>
-                      <span className="font-bold text-slate-800">{officeName}</span>
-                      <p className="text-slate-500 text-[11px]">
-                        {selectedLocation.district} District, Tamil Nadu
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setSelectedServiceModal(null);
-                      openLocationModal();
-                    }}
-                    className="text-gov-700 font-bold hover:underline"
-                  >
-                    Change Office
-                  </button>
-                </div>
-              </div>
-
-              {/* Modal Footer with Actions */}
-              <div className="p-5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <button
-                  onClick={() => setSelectedServiceModal(null)}
-                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
-                >
-                  Close
-                </button>
-
-                <div className="w-full sm:w-auto flex flex-wrap sm:flex-nowrap items-center gap-2">
-                  <button
-                    onClick={() => {
-                      const s = selectedServiceModal;
-                      setSelectedServiceModal(null);
-                      handleAction("token", s);
-                    }}
-                    className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs"
-                  >
-                    <Ticket className="w-4 h-4" />
-                    Walk-in Token
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const s = selectedServiceModal;
-                      setSelectedServiceModal(null);
-                      handleAction("appointment", s);
-                    }}
-                    className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-xs"
-                  >
-                    <Calendar className="w-4 h-4" />
-                    Book Appointment
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const s = selectedServiceModal;
-                      setSelectedServiceModal(null);
-                      handleAction("apply", s);
-                    }}
-                    className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-gov-700 hover:bg-gov-800 text-white font-bold text-xs transition-all flex items-center justify-center gap-1.5 shadow-md"
-                  >
-                    <FileText className="w-4 h-4" />
-                    Apply Online
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ServiceDetailModal
+            service={selectedServiceModal}
+            onClose={() => setSelectedServiceModal(null)}
+          />
         )}
       </div>
     </div>

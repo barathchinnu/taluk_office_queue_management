@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { departmentService } from "../services/api";
+import { departmentService, serviceCatalogService } from "../services/api";
 import { useLanguage } from "../context/LanguageContext";
 import { useLocation as useGeoLocation } from "../context/LocationContext";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 import EmptyState from "../components/EmptyState";
+import ServiceDetailModal from "../components/ServiceDetailModal";
 import {
   Landmark,
   Search,
@@ -23,15 +24,28 @@ import {
   FileCheck,
   Sparkles,
   Award,
+  FileCheck2,
+  IndianRupee,
+  Lock,
+  ChevronRight,
+  Filter,
 } from "lucide-react";
 
 const Home = () => {
   const [departments, setDepartments] = useState([]);
+  const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [servicesLoading, setServicesLoading] = useState(true);
   const [error, setError] = useState("");
-  const { t, tDeptName, tDeptDesc, language } = useLanguage();
+  const { t, tDeptName, tDeptDesc, tServiceName, language } = useLanguage();
   const { officeName, selectedLocation, openLocationModal } = useGeoLocation();
 
+  // State for Service Detail Modal & Filter
+  const [selectedServiceModal, setSelectedServiceModal] = useState(null);
+  const [selectedCategoryTab, setSelectedCategoryTab] = useState("all");
+  const [searchServiceQuery, setSearchServiceQuery] = useState("");
+
+  // Load departments
   useEffect(() => {
     departmentService
       .getAll()
@@ -48,6 +62,202 @@ const Home = () => {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  // Load services for required documents lookup & token booking
+  useEffect(() => {
+    serviceCatalogService
+      .getAll()
+      .then((res) => {
+        if (res.success) {
+          setServices(res.data || res.services || []);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching services:", err);
+      })
+      .finally(() => setServicesLoading(false));
+  }, []);
+
+  // Fallback standard services if offline or seeding in progress
+  const defaultServices = [
+    {
+      _id: "6ab6b0dd02be36a5838574c4",
+      name: "Income Certificate",
+      code: "REV_INC",
+      department: { name: "Revenue", code: "REVE" },
+      description: "Application and processing of income certificate for education & government schemes.",
+      fee: 60,
+      averageServiceTime: 10,
+      expectedProcessingDays: 3,
+      requiredDocuments: [
+        "Aadhaar Card",
+        "Salary Certificate / Pay Slip",
+        "Ration Card",
+        "Self Declaration Affidavit",
+      ],
+    },
+    {
+      _id: "6abc8db436ed18df0c477667",
+      name: "Patta Related Service",
+      code: "REV_PATTA",
+      department: { name: "Revenue", code: "REVE" },
+      description: "Patta transfer, sub-division, name correction, and chitta extract from the Taluk Office.",
+      fee: 0,
+      averageServiceTime: 15,
+      expectedProcessingDays: 15,
+      requiredDocuments: [
+        "Sale Deed / Registered Document",
+        "Previous Patta Copy",
+        "EC (Encumbrance Certificate)",
+        "Aadhaar Card",
+      ],
+    },
+    {
+      _id: "6abc8db436ed18df0c47766d",
+      name: "Community Certificate",
+      code: "CERT_COMM",
+      department: { name: "Revenue", code: "REVE" },
+      description: "Statutory community certificate verifying BC / MBC / SC / ST category.",
+      fee: 60,
+      averageServiceTime: 10,
+      expectedProcessingDays: 7,
+      requiredDocuments: [
+        "Father / Mother Community Certificate",
+        "School Transfer Certificate (TC)",
+        "Ration Card",
+        "Aadhaar Card",
+      ],
+    },
+    {
+      _id: "6abc8db436ed18df0c47766e",
+      name: "Nativity Certificate",
+      code: "CERT_NAT",
+      department: { name: "Revenue", code: "REVE" },
+      description: "Official certificate establishing continuous residence and nativity in Tamil Nadu.",
+      fee: 60,
+      averageServiceTime: 10,
+      expectedProcessingDays: 7,
+      requiredDocuments: [
+        "Birth Certificate",
+        "Parent Proof of Residence (5+ years)",
+        "Aadhaar Card",
+        "Ration Card",
+      ],
+    },
+    {
+      _id: "6abc8db436ed18df0c477672",
+      name: "Aadhaar Update",
+      code: "UID_UPDATE",
+      department: { name: "Aadhaar Kendra", code: "UIDAI" },
+      description: "Biometric and demographic updates, mobile number linking, and address updates.",
+      fee: 50,
+      averageServiceTime: 12,
+      expectedProcessingDays: 5,
+      requiredDocuments: [
+        "Existing Aadhaar Card Copy",
+        "Valid Supporting Document for Updated Field",
+        "Active Mobile for OTP",
+      ],
+    },
+    {
+      _id: "6abc8db436ed18df0c47766c",
+      name: "Old Age Pension Scheme",
+      code: "WEL_OAP",
+      department: { name: "Social Welfare", code: "WELF" },
+      description: "Monthly financial pension assistance for senior citizens (60+ years) below poverty line.",
+      fee: 0,
+      averageServiceTime: 15,
+      expectedProcessingDays: 14,
+      requiredDocuments: [
+        "Age Proof (Aadhaar / Voter ID - 60+ Years)",
+        "Income Certificate (Below Poverty Line)",
+        "Bank Passbook Copy",
+      ],
+    },
+    {
+      _id: "6abc8db436ed18df0c47766f",
+      name: "Residence Certificate",
+      code: "CERT_RES",
+      department: { name: "Revenue", code: "REVE" },
+      description: "Official residential proof issued by the Revenue Inspector and Tahsildar.",
+      fee: 60,
+      averageServiceTime: 10,
+      expectedProcessingDays: 3,
+      requiredDocuments: [
+        "EB Electricity Bill / Water Bill",
+        "Rental Agreement / Property Tax Receipt",
+        "Aadhaar Card",
+      ],
+    },
+    {
+      _id: "6abc8db436ed18df0c47766b",
+      name: "Disability Welfare Assistance",
+      code: "WEL_DIS",
+      department: { name: "Social Welfare", code: "WELF" },
+      description: "Disability pension allowance and medical equipment assistance.",
+      fee: 0,
+      averageServiceTime: 15,
+      expectedProcessingDays: 10,
+      requiredDocuments: [
+        "Medical Board Disability Certificate (40%+)",
+        "Aadhaar Card",
+        "Bank Account Details",
+        "Passport Size Photos",
+      ],
+    },
+  ];
+
+  const allAvailableServices = services.length > 0 ? services : defaultServices;
+
+  // Filter services by category and search
+  const filteredServices = allAvailableServices.filter((s) => {
+    const q = searchServiceQuery.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      s.name?.toLowerCase().includes(q) ||
+      s.code?.toLowerCase().includes(q) ||
+      s.description?.toLowerCase().includes(q);
+
+    if (!matchesSearch) return false;
+
+    if (selectedCategoryTab === "all") return true;
+    if (selectedCategoryTab === "Revenue") {
+      return (
+        s.department?.name?.toLowerCase().includes("revenue") ||
+        s.code?.startsWith("REV") ||
+        s.name?.toLowerCase().includes("patta") ||
+        s.name?.toLowerCase().includes("income")
+      );
+    }
+    if (selectedCategoryTab === "Aadhaar") {
+      return (
+        s.department?.name?.toLowerCase().includes("aadhaar") ||
+        s.code?.startsWith("UID") ||
+        s.name?.toLowerCase().includes("aadhaar")
+      );
+    }
+    if (selectedCategoryTab === "Certificate") {
+      return (
+        s.code?.startsWith("CERT") ||
+        s.name?.toLowerCase().includes("certificate")
+      );
+    }
+    if (selectedCategoryTab === "Welfare") {
+      return (
+        s.department?.name?.toLowerCase().includes("welfare") ||
+        s.code?.startsWith("WEL") ||
+        s.name?.toLowerCase().includes("pension") ||
+        s.name?.toLowerCase().includes("disability")
+      );
+    }
+    if (selectedCategoryTab === "Land") {
+      return (
+        s.name?.toLowerCase().includes("patta") ||
+        s.name?.toLowerCase().includes("land")
+      );
+    }
+    return true;
+  });
 
   // Standard Tamil Nadu Government Service Categories (Requirement 10)
   const serviceCategories = [
@@ -125,6 +335,15 @@ const Home = () => {
     },
   ];
 
+  // Handler when clicking a category card: scroll to services & filter tab
+  const handleCategoryClick = (query) => {
+    setSelectedCategoryTab(query);
+    const element = document.getElementById("services-section");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   // 5-Step Government Workflow (Requirement 10)
   const howItWorksSteps = [
     {
@@ -192,20 +411,20 @@ const Home = () => {
           <p className="max-w-2xl mx-auto text-sm sm:text-base text-slate-100 font-normal leading-relaxed">
             {language === "ta"
               ? "முன்பதிவு செய்யுங்கள், வரிசை டோக்கன்களைப் பெறுங்கள், விண்ணப்பங்களை நிகழ்நேரத்தில் கண்காணித்து அரசு சேவைகளைப் பெறுங்கள்."
-              : "Book appointments, take queue tokens, track applications and receive real-time service updates across all 38 districts of Tamil Nadu."}
+              : "Book appointments, take queue tokens, track applications and check required documents across all 38 districts of Tamil Nadu."}
           </p>
 
           {/* Primary & Secondary CTAs */}
           <div className="flex flex-wrap justify-center gap-3.5 pt-2">
-            <Link
-              to="/services"
-              className="flex items-center gap-2 px-6 py-3.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm shadow-md transition-colors"
+            <a
+              href="#services-section"
+              className="flex items-center gap-2 px-6 py-3.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm shadow-md transition-colors cursor-pointer"
             >
               <Search className="w-4 h-4 text-slate-950" />
               <span>
-                {language === "ta" ? "அரசு சேவையைத் தேடுங்கள்" : "Find a Government Service"}
+                {language === "ta" ? "அரசு சேவைகளைத் தேடுங்கள்" : "Browse Services & Documents"}
               </span>
-            </Link>
+            </a>
 
             <Link
               to="/track"
@@ -243,7 +462,7 @@ const Home = () => {
 
             <button
               onClick={openLocationModal}
-              className="text-amber-300 hover:text-amber-200 font-bold underline transition-colors"
+              className="text-amber-300 hover:text-amber-200 font-bold underline transition-colors cursor-pointer"
             >
               {language === "ta" ? "அலுவலகத்தை மாற்று" : "Switch Taluk Office"}
             </button>
@@ -290,33 +509,38 @@ const Home = () => {
       </section>
 
       {/* ==========================================
-          SERVICE CATEGORIES (Requirement 10)
+          SERVICE CATEGORIES
       ========================================== */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 mb-6">
           <div>
             <span className="text-xs uppercase font-extrabold tracking-wider text-[#0b3b60]">
-              {language === "ta" ? "சேவை வகைகள்" : "Service Directory"}
+              {language === "ta" ? "சேவை பிரிவுகள்" : "Service Directory"}
             </span>
             <h2 className="text-2xl font-extrabold text-slate-900 font-heading">
               {language === "ta" ? "அரசு சேவை பிரிவுகள்" : "Government Service Categories"}
             </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              {language === "ta"
+                ? "சேவையை கிளிக் செய்து தேவையான ஆவணங்களைப் பார்க்கவும்"
+                : "Click any category to filter services and view required documents"}
+            </p>
           </div>
           <Link
             to="/services"
             className="text-xs sm:text-sm font-bold text-[#0b3b60] hover:text-[#00809d] flex items-center gap-1 group"
           >
-            <span>{language === "ta" ? "அனைத்து சேவைகளையும் பார்க்க" : "View Complete Catalog"}</span>
+            <span>{language === "ta" ? "முழு பட்டியலைக் காண்க" : "View Complete Catalog"}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {serviceCategories.map((cat) => (
-            <Link
+            <button
               key={cat.id}
-              to={`/services?search=${encodeURIComponent(cat.query)}`}
-              className="bg-white p-5 rounded-xl border border-slate-200 hover:border-[#0b3b60] hover:shadow-md transition-all group flex flex-col justify-between"
+              onClick={() => handleCategoryClick(cat.query)}
+              className="bg-white p-5 rounded-xl border border-slate-200 hover:border-[#0b3b60] hover:shadow-md transition-all group flex flex-col justify-between text-left cursor-pointer"
             >
               <div className="space-y-2">
                 <div className="text-2xl mb-1">{cat.icon}</div>
@@ -327,12 +551,181 @@ const Home = () => {
                   {language === "ta" ? cat.descTa : cat.descEn}
                 </p>
               </div>
-              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-[#0b3b60] font-semibold">
-                <span>{language === "ta" ? "விவரங்கள்" : "Explore Services"}</span>
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-[#0b3b60] font-semibold w-full">
+                <span>{language === "ta" ? "ஆவணங்களை காண்க" : "View Services & Docs"}</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
-            </Link>
+            </button>
           ))}
+        </div>
+      </section>
+
+      {/* =========================================================================
+          POPULAR GOVERNMENT SERVICES — DIRECT CLICK TO VIEW REQUIRED DOCUMENTS
+      ========================================================================= */}
+      <section id="services-section" className="max-w-6xl mx-auto px-4 sm:px-6 scroll-mt-6">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+          {/* Header & Search */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-slate-100 pb-5">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200 mb-2">
+                <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>
+                  {language === "ta" ? "தேவையான ஆவணங்கள் சரிபார்ப்பு" : "Document Requirements & Token Portal"}
+                </span>
+              </div>
+              <h2 className="text-2xl font-black text-slate-900 font-heading">
+                {language === "ta"
+                  ? "அரசு சேவைகள் — தேவையான ஆவணங்கள்"
+                  : "Government Services & Required Documents"}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-2xl">
+                {language === "ta"
+                  ? "எந்தவொரு சேவையை கிளிக் செய்தாலும் அதற்குத் தேவையான அசல் மற்றும் நகல் ஆவணங்களைப் பார்த்து, உள்நுழைந்து டோக்கன் பெறலாம்."
+                  : "Click any service to view the mandatory documents needed before visiting the Taluk Office counter and book your token."}
+              </p>
+            </div>
+
+            {/* Quick Search */}
+            <div className="w-full md:w-72 relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+              <input
+                type="text"
+                placeholder={language === "ta" ? "சேவை பெயர் தேட..." : "Search service (e.g. Income, Patta)..."}
+                value={searchServiceQuery}
+                onChange={(e) => setSearchServiceQuery(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#0b3b60] transition-all"
+              />
+            </div>
+          </div>
+
+          {/* Category Filter Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+            <span className="font-bold text-slate-600 shrink-0 flex items-center gap-1">
+              <Filter className="w-3.5 h-3.5 text-slate-400" />
+              {language === "ta" ? "பிரிவு:" : "Filter:"}
+            </span>
+            {[
+              { id: "all", labelEn: "All Services", labelTa: "அனைத்தும்" },
+              { id: "Revenue", labelEn: "Revenue (வருவாய்)", labelTa: "வருவாய்த்துறை" },
+              { id: "Aadhaar", labelEn: "Aadhaar (ஆதார்)", labelTa: "ஆதார் மையம்" },
+              { id: "Certificate", labelEn: "Certificates", labelTa: "சான்றிதழ்கள்" },
+              { id: "Land", labelEn: "Land & Patta", labelTa: "நிலம் / பட்டா" },
+              { id: "Welfare", labelEn: "Welfare & Pension", labelTa: "சமூக நலன்" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setSelectedCategoryTab(tab.id)}
+                className={`px-3.5 py-1.5 rounded-lg font-bold shrink-0 transition-all cursor-pointer ${
+                  selectedCategoryTab === tab.id
+                    ? "bg-[#0b3b60] text-white shadow-xs"
+                    : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                }`}
+              >
+                {language === "ta" ? tab.labelTa : tab.labelEn}
+              </button>
+            ))}
+          </div>
+
+          {/* Services Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 pt-2">
+            {filteredServices.map((service) => {
+              const docCount = service.requiredDocuments?.length || 4;
+              const feeDisplay =
+                service.fee === 0 || service.fee === "0"
+                  ? language === "ta"
+                    ? "இலவசம்"
+                    : "Free"
+                  : `₹${service.fee}`;
+
+              return (
+                <div
+                  key={service._id}
+                  onClick={() => setSelectedServiceModal(service)}
+                  className="bg-white rounded-2xl border border-slate-200 hover:border-[#0b3b60] hover:shadow-lg transition-all p-5 flex flex-col justify-between group cursor-pointer relative overflow-hidden"
+                >
+                  <div className="space-y-3">
+                    {/* Top tags */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#0b3b60] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                        {service.department?.name || "General Desk"}
+                      </span>
+                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 flex items-center gap-0.5">
+                        <IndianRupee className="w-3 h-3" />
+                        {feeDisplay}
+                      </span>
+                    </div>
+
+                    {/* Service Title */}
+                    <div>
+                      <h3 className="text-base font-bold text-slate-900 group-hover:text-[#0b3b60] transition-colors leading-snug">
+                        {tServiceName(service.name)}
+                      </h3>
+                      {language === "both" && service.name && (
+                        <p className="text-xs text-slate-500 font-medium">
+                          {service.name}
+                        </p>
+                      )}
+                      <p className="text-xs text-slate-600 mt-1 line-clamp-2 leading-relaxed">
+                        {service.description || "Official government service offered at the Taluk Office."}
+                      </p>
+                    </div>
+
+                    {/* Prominent Required Documents Preview Box */}
+                    <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs font-bold text-emerald-900">
+                        <span className="flex items-center gap-1.5">
+                          <FileCheck2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                          <span>{language === "ta" ? "தேவையான ஆவணங்கள்:" : "Required Documents:"}</span>
+                        </span>
+                        <span className="text-[10px] bg-emerald-200/60 text-emerald-900 px-1.5 py-0.5 rounded font-extrabold">
+                          {docCount} {language === "ta" ? "ஆவணங்கள்" : "Docs"}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-700 truncate font-medium">
+                        {service.requiredDocuments && service.requiredDocuments.length > 0
+                          ? service.requiredDocuments.slice(0, 2).join(", ") +
+                            (service.requiredDocuments.length > 2
+                              ? ` (+${service.requiredDocuments.length - 2} more)`
+                              : "")
+                          : "Aadhaar Card, Ration Card, ID Proof"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Card Bottom Action */}
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 flex items-center gap-1 text-[11px]">
+                      <Clock className="w-3 h-3 text-amber-500" />
+                      ~{service.averageServiceTime || 10} mins
+                    </span>
+                    <button
+                      type="button"
+                      className="font-bold text-[#0b3b60] group-hover:text-[#00809d] flex items-center gap-1"
+                    >
+                      <span>{language === "ta" ? "ஆவணங்கள் & டோக்கன்" : "View Documents & Book"}</span>
+                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {filteredServices.length === 0 && (
+            <div className="py-12 text-center text-slate-500">
+              <p className="text-sm font-semibold">No services match your search query.</p>
+              <button
+                onClick={() => {
+                  setSearchServiceQuery("");
+                  setSelectedCategoryTab("all");
+                }}
+                className="mt-2 text-xs font-bold text-[#0b3b60] underline"
+              >
+                Reset Filters
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -440,6 +833,16 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      {/* =========================================================================
+          GLOBAL SERVICE DETAIL & REQUIRED DOCUMENTS MODAL (AUTH GATED)
+      ========================================================================= */}
+      {selectedServiceModal && (
+        <ServiceDetailModal
+          service={selectedServiceModal}
+          onClose={() => setSelectedServiceModal(null)}
+        />
+      )}
     </div>
   );
 };

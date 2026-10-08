@@ -1405,7 +1405,7 @@ export const LanguageProvider = ({ children }) => {
   // Helper for department name
   const tDeptName = (name) => {
     if (!name) return "";
-    const found = translations.departments[name];
+    const found = translations.departments?.[name];
     if (!found) return name;
     if (language === "ta") return found.ta || found.both || found.en || name;
     if (language === "en") return found.en || found.both || name;
@@ -1414,7 +1414,7 @@ export const LanguageProvider = ({ children }) => {
 
   // Helper for department description
   const tDeptDesc = (name, fallback) => {
-    const found = translations.departments[name];
+    const found = translations.departments?.[name];
     if (!found?.desc) return fallback || "";
     if (language === "ta") return found.desc.ta || found.desc.both || found.desc.en || fallback;
     if (language === "en") return found.desc.en || found.desc.both || fallback;
@@ -1424,7 +1424,7 @@ export const LanguageProvider = ({ children }) => {
   // Helper for service name
   const tServiceName = (name) => {
     if (!name) return "";
-    const found = translations.services[name];
+    const found = translations.services?.[name];
     if (!found) return name;
     if (language === "ta") return found.ta || found.both || found.en || name;
     if (language === "en") return found.en || found.both || name;

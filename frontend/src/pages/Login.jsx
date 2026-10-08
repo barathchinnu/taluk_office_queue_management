@@ -214,7 +214,7 @@ const Login = () => {
   };
 
   const redirectAfterLogin = (userRole) => {
-    const from = location.state?.from?.pathname;
+    const from = location.state?.from?.pathname || location.state?.returnTo;
     if (from) {
       navigate(from, { replace: true });
     } else if (userRole === "admin") {
@@ -225,6 +225,8 @@ const Login = () => {
       navigate("/citizen");
     }
   };
+
+  const requestedServiceName = location.state?.serviceName;
 
   return (
     <div className="min-h-[85vh] bg-[#f4f7fa] flex flex-col justify-between">
@@ -244,6 +246,17 @@ const Login = () => {
                 Access Tamil Nadu Smart Government Services & Taluk Office Desks
               </p>
             </div>
+
+            {/* Optional Banner if redirected from service modal to book token */}
+            {requestedServiceName && (
+              <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center gap-2 text-xs text-amber-900 font-semibold">
+                <Lock className="w-4 h-4 text-amber-700 shrink-0" />
+                <span>
+                  Please sign in to book your queue token for{" "}
+                  <strong className="text-slate-900 font-bold">{requestedServiceName}</strong>.
+                </span>
+              </div>
+            )}
 
             {/* Auth Method Navigation Tabs */}
             <div className="grid grid-cols-3 bg-slate-100 border-b border-slate-200 text-xs font-bold text-slate-700">
