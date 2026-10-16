@@ -145,7 +145,7 @@ const CitizenSidebar = ({
       id: "profile",
       label: language === "ta" ? "சுயவிவரம் / அமைப்புகள்" : "Profile / Settings",
       icon: Settings,
-      onClick: () => setShowProfileModal(true),
+      to: "/citizen/profile",
     },
   ];
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { departmentService, serviceService, appointmentService } from "../../services/api";
 import StatusBadge from "../../components/StatusBadge";
+import ServiceDetailModal from "../../components/ServiceDetailModal";
 import { useLanguage } from "../../context/LanguageContext";
 import { useLocation as useGeoLocation } from "../../context/LocationContext";
 import {
@@ -16,6 +17,10 @@ import {
   ArrowRight,
   ArrowLeft,
   MapPin,
+  FileCheck2,
+  FileText,
+  Eye,
+  ShieldCheck,
 } from "lucide-react";
 
 const MyAppointments = () => {
@@ -29,6 +34,7 @@ const MyAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [services, setServices] = useState([]);
+  const [selectedServiceModal, setSelectedServiceModal] = useState(null);
   const { t, tDeptName, tServiceName, language } = useLanguage();
 
   // Form State
@@ -365,6 +371,60 @@ const MyAppointments = () => {
               </select>
             </div>
 
+            {/* Required Documents Card for Selected Service */}
+            {(() => {
+              const activeSvc = services.find((s) => s._id === selectedService);
+              if (!activeSvc) return null;
+              const docs =
+                Array.isArray(activeSvc.requiredDocuments) && activeSvc.requiredDocuments.length > 0
+                  ? activeSvc.requiredDocuments
+                  : [
+                      "Aadhaar Card / Government Photo ID (Original + Copy)",
+                      "Smart Family Ration Card / Proof of Residence",
+                      "Recent Passport Size Photographs (2 Nos)",
+                      "Duly Filled Application Form / Self-Declaration",
+                    ];
+              return (
+                <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 space-y-3 animate-in fade-in duration-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/60 pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-md bg-emerald-600 text-white flex items-center justify-center">
+                        <FileCheck2 className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="text-xs font-bold text-slate-900">
+                        {language === "ta"
+                          ? "நேரில் கொண்டுவர வேண்டிய கட்டாய ஆவணங்கள்"
+                          : "Mandatory Documents to Bring for Appointment"}
+                      </h4>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedServiceModal(activeSvc)}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-gov-700 hover:text-gov-900 hover:underline cursor-pointer self-start sm:self-auto"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-gov-600" />
+                      <span>{language === "ta" ? "முழு வழிகாட்டியைப் பார்க்க" : "View Full Checklist & Guidelines"}</span>
+                    </button>
+                  </div>
+
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-800">
+                    {docs.map((doc, idx) => (
+                      <li key={idx} className="flex items-start gap-1.5 font-medium">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                        <span>{doc}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <p className="text-[11px] text-emerald-800 font-medium">
+                    {language === "ta"
+                      ? "* உங்கள் முன்பதிவு நாளில் அசல் ஆவணங்கள் மற்றும் 1 சுய சான்றொப்பமிட்ட நகலுடன் வருகை தரவும்."
+                      : "* Please carry all original documents and 1 photocopy on your scheduled appointment date."}
+                  </p>
+                </div>
+              );
+            })()}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -511,7 +571,19 @@ const MyAppointments = () => {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2 self-end md:self-auto">
+                    <div className="flex flex-wrap items-center gap-2 self-end md:self-auto">
+                      {appt.service && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedServiceModal(appt.service)}
+                          className="px-3 py-2 rounded-xl text-xs font-bold text-gov-700 hover:text-gov-900 bg-gov-50 hover:bg-gov-100 border border-gov-200 flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                          title={language === "ta" ? "தேவையான ஆவணங்களைக் காண்க" : "View required documents for this service"}
+                        >
+                          <FileText className="w-3.5 h-3.5 text-gov-600" />
+                          <span>{language === "ta" ? "ஆவணங்கள்" : "Required Docs"}</span>
+                        </button>
+                      )}
+
                       {isBooked && (
                         <>
                           <button
@@ -553,6 +625,14 @@ const MyAppointments = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Service Detail Modal (Required Documents & Information) */}
+      {selectedServiceModal && (
+        <ServiceDetailModal
+          service={selectedServiceModal}
+          onClose={() => setSelectedServiceModal(null)}
+        />
       )}
     </div>
   );

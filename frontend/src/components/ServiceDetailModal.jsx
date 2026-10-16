@@ -29,7 +29,7 @@ import {
  * - Unauthenticated: "Login to Book Token" callout + direct login redirection
  * - Authenticated: Direct action buttons to Take Walk-in Token or Book Appointment
  */
-const ServiceDetailModal = ({ service, onClose }) => {
+const ServiceDetailModal = ({ service, onClose, onSelectService }) => {
   const { isAuthenticated, user } = useAuth();
   const { language, tServiceName, tDeptName } = useLanguage();
   const { officeName, selectedLocation } = useGeoLocation();
@@ -102,7 +102,11 @@ const ServiceDetailModal = ({ service, onClose }) => {
   // Handle Token redirect (Authenticated)
   const handleTakeToken = () => {
     onClose();
-    navigate(`/citizen/take-token?serviceId=${service._id}&deptId=${deptId}`);
+    if (onSelectService) {
+      onSelectService(service);
+    } else {
+      navigate(`/citizen/take-token?serviceId=${service._id}&deptId=${deptId}`);
+    }
   };
 
   // Handle Appointment redirect (Authenticated)

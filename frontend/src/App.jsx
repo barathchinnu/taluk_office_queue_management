@@ -22,6 +22,7 @@ import Notifications from "./pages/Notifications";
 
 // Citizen
 import CitizenDashboard from "./pages/citizen/CitizenDashboard";
+import CitizenProfile from "./pages/citizen/CitizenProfile";
 import TakeToken from "./pages/citizen/TakeToken";
 import MyAppointments from "./pages/citizen/MyAppointments";
 import LiveQueue from "./pages/citizen/LiveQueue";
@@ -143,6 +144,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={["citizen"]}>
                     <CitizenDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/citizen/profile"
+                element={
+                  <ProtectedRoute allowedRoles={["citizen"]}>
+                    <CitizenProfile />
                   </ProtectedRoute>
                 }
               />

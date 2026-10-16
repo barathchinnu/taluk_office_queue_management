@@ -124,7 +124,7 @@ const getMyAppointments = async (req, res) => {
       .populate("department", "name code")
       .populate(
         "service",
-        "name averageServiceTime"
+        "name averageServiceTime requiredDocuments fee expectedProcessingDays description code"
       )
       .sort({
         appointmentDate: -1,
@@ -174,7 +174,7 @@ const getMyToken = async (req, res) => {
       )
       .populate(
         "service",
-        "name averageServiceTime"
+        "name averageServiceTime requiredDocuments fee expectedProcessingDays description code"
       )
       .populate(
         "counter",
@@ -344,7 +344,7 @@ const getCurrentQueue = async (req, res) => {
       })
         .populate(
           "service",
-          "name averageServiceTime"
+          "name averageServiceTime requiredDocuments fee expectedProcessingDays description code"
         )
         .populate(
           "counter",

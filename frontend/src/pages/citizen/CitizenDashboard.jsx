@@ -9,6 +9,7 @@ import StatusBadge from "../../components/StatusBadge";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import EmptyState from "../../components/EmptyState";
 import FeedbackModal from "../../components/FeedbackModal";
+import ServiceDetailModal from "../../components/ServiceDetailModal";
 import {
   Ticket,
   Clock,
@@ -26,6 +27,7 @@ import {
   Compass,
   Star,
   Sparkles,
+  FileCheck2,
 } from "lucide-react";
 
 const CitizenDashboard = () => {
@@ -41,6 +43,7 @@ const CitizenDashboard = () => {
   const [checkInLoading, setCheckInLoading] = useState(null);
   const [message, setMessage] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [selectedServiceModal, setSelectedServiceModal] = useState(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -309,13 +312,26 @@ const CitizenDashboard = () => {
               </div>
               <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
                 <StatusBadge status={activeToken.status} />
-                <Link
-                  to="/citizen/queue"
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0b3b60] hover:text-[#00809d] bg-blue-50 px-2 py-0.5 rounded border border-blue-200"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Live Status →
-                </Link>
+                <div className="flex items-center gap-1.5">
+                  {activeToken.service && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedServiceModal(activeToken.service)}
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 transition-colors cursor-pointer"
+                      title={language === "ta" ? "தேவையான ஆவணங்களைக் காண்க" : "View required documents for counter"}
+                    >
+                      <FileCheck2 className="w-3 h-3 text-emerald-600" />
+                      <span>{language === "ta" ? "ஆவணங்கள்" : "Required Docs"}</span>
+                    </button>
+                  )}
+                  <Link
+                    to="/citizen/queue"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-[#0b3b60] hover:text-[#00809d] bg-blue-50 px-2 py-0.5 rounded border border-blue-200"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live Status →
+                  </Link>
+                </div>
               </div>
             </div>
           ) : (
@@ -582,6 +598,13 @@ const CitizenDashboard = () => {
           token={activeToken}
           service={activeToken?.service}
           department={activeToken?.department}
+        />
+      )}
+      {/* Service Detail Modal (Required Documents & Information) */}
+      {selectedServiceModal && (
+        <ServiceDetailModal
+          service={selectedServiceModal}
+          onClose={() => setSelectedServiceModal(null)}
         />
       )}
     </div>

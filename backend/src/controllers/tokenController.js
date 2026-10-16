@@ -198,7 +198,7 @@ const generateToken = async (req, res) => {
     const populatedToken = await Token.findById(token._id)
       .populate("citizen", "fullName email phone")
       .populate("department", "name code")
-      .populate("service", "name averageServiceTime")
+      .populate("service", "name averageServiceTime requiredDocuments fee expectedProcessingDays description code")
       .populate("counter", "counterNumber name");
 
     // Real-time notification via Socket.IO
@@ -235,7 +235,7 @@ const getMyToken = async (req, res) => {
       status: { $in: ["waiting", "called", "serving"] },
     })
       .populate("department", "name code")
-      .populate("service", "name averageServiceTime")
+      .populate("service", "name averageServiceTime requiredDocuments fee expectedProcessingDays description code")
       .populate("counter", "counterNumber name")
       .sort({ createdAt: -1 });
 
@@ -323,7 +323,7 @@ const getQueue = async (req, res) => {
 
     const queue = await Token.find(queueFilter)
       .populate("citizen", "fullName phone")
-      .populate("service", "name averageServiceTime")
+      .populate("service", "name averageServiceTime requiredDocuments fee expectedProcessingDays description code")
       .populate("counter", "counterNumber name")
       .sort({ tokenNumber: 1 });
 
@@ -412,7 +412,7 @@ const getPublicQueue = async (req, res) => {
     const tokens = await Token.find(tokenFilter)
       .select("tokenNumber tokenDisplay status counter service department calledAt servingAt createdAt")
       .populate("counter", "counterNumber name")
-      .populate("service", "name averageServiceTime")
+      .populate("service", "name averageServiceTime requiredDocuments fee expectedProcessingDays description code")
       .populate("department", "name code")
       .sort({ tokenNumber: 1 });
 
@@ -589,7 +589,7 @@ const callNextToken = async (req, res) => {
     const populatedToken = await Token.findById(nextToken._id)
       .populate("citizen", "fullName phone email")
       .populate("department", "name code")
-      .populate("service", "name averageServiceTime")
+      .populate("service", "name averageServiceTime requiredDocuments fee expectedProcessingDays description code")
       .populate("counter", "counterNumber name");
 
     notifyQueueUpdate(officer.department, "tokenCalled", populatedToken);
@@ -664,7 +664,7 @@ const startService = async (req, res) => {
     const populatedToken = await Token.findById(token._id)
       .populate("citizen", "fullName phone email")
       .populate("department", "name code")
-      .populate("service", "name averageServiceTime")
+      .populate("service", "name averageServiceTime requiredDocuments fee expectedProcessingDays description code")
       .populate("counter", "counterNumber name");
 
     notifyQueueUpdate(token.department, "serviceStarted", populatedToken);
@@ -733,7 +733,7 @@ const completeService = async (req, res) => {
     const populatedToken = await Token.findById(token._id)
       .populate("citizen", "fullName phone email")
       .populate("department", "name code")
-      .populate("service", "name averageServiceTime")
+      .populate("service", "name averageServiceTime requiredDocuments fee expectedProcessingDays description code")
       .populate("counter", "counterNumber name");
 
     notifyQueueUpdate(token.department, "serviceCompleted", populatedToken);
@@ -802,7 +802,7 @@ const skipToken = async (req, res) => {
     const populatedToken = await Token.findById(token._id)
       .populate("citizen", "fullName phone email")
       .populate("department", "name code")
-      .populate("service", "name averageServiceTime")
+      .populate("service", "name averageServiceTime requiredDocuments fee expectedProcessingDays description code")
       .populate("counter", "counterNumber name");
 
     notifyQueueUpdate(token.department, "tokenSkipped", populatedToken);
@@ -854,7 +854,7 @@ const verifyTokenPriority = async (req, res) => {
     const populatedToken = await Token.findById(token._id)
       .populate("citizen", "fullName phone email")
       .populate("department", "name code")
-      .populate("service", "name averageServiceTime")
+      .populate("service", "name averageServiceTime requiredDocuments fee expectedProcessingDays description code")
       .populate("counter", "counterNumber name");
 
     notifyQueueUpdate(token.department, "tokenUpdated", populatedToken);

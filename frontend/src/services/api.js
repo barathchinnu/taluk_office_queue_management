@@ -385,6 +385,32 @@ export const locationService = {
 };
 
 // ==========================================
+// CITIZEN PROFILE & PORTAL SERVICES
+// ==========================================
+export const citizenService = {
+  getProfile: async () => {
+    const res = await api.get("/citizens/profile");
+    return res.data;
+  },
+  updateProfile: async (data) => {
+    const res = await api.put("/citizens/profile", data);
+    return res.data;
+  },
+  getMyToken: async () => {
+    const res = await api.get("/citizens/token");
+    return res.data;
+  },
+  getMyAppointments: async () => {
+    const res = await api.get("/citizens/appointments");
+    return res.data;
+  },
+  getCurrentQueue: async (departmentId) => {
+    const res = await api.get(`/citizens/queue/${departmentId}`);
+    return res.data;
+  },
+};
+
+// ==========================================
 // APPLICATION WORKFLOW SERVICES
 // ==========================================
 export const applicationService = {

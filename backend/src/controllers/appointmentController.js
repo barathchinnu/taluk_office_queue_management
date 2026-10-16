@@ -145,7 +145,7 @@ const createAppointment = async (req, res) => {
     const populatedAppointment = await Appointment.findById(appointment._id)
       .populate("citizen", "fullName email phone")
       .populate("department", "name code")
-      .populate("service", "name averageServiceTime")
+      .populate("service", "name averageServiceTime requiredDocuments fee expectedProcessingDays description code")
       .populate("office", "name code state district taluk address");
 
     // Trigger notification to citizen
@@ -174,7 +174,7 @@ const getMyAppointments = async (req, res) => {
 
     const appointments = await Appointment.find({ citizen: userId })
       .populate("department", "name code")
-      .populate("service", "name averageServiceTime")
+      .populate("service", "name averageServiceTime requiredDocuments fee expectedProcessingDays description code")
       .populate("office", "name code state district taluk address")
       .sort({ appointmentDate: -1 });
 
@@ -216,7 +216,7 @@ const getAppointments = async (req, res) => {
     const appointments = await Appointment.find(filter)
       .populate("citizen", "fullName email phone")
       .populate("department", "name code")
-      .populate("service", "name averageServiceTime")
+      .populate("service", "name averageServiceTime requiredDocuments fee expectedProcessingDays description code")
       .sort({ appointmentDate: 1 });
 
     res.status(200).json({
@@ -250,7 +250,7 @@ const getAppointmentById = async (req, res) => {
     const appointment = await Appointment.findById(id)
       .populate("citizen", "fullName email phone")
       .populate("department", "name code")
-      .populate("service", "name averageServiceTime");
+      .populate("service", "name averageServiceTime requiredDocuments fee expectedProcessingDays description code");
 
     if (!appointment) {
       return res.status(404).json({
@@ -439,7 +439,7 @@ const checkInAppointment = async (req, res) => {
     const populatedToken = await Token.findById(token._id)
       .populate("citizen", "fullName email phone")
       .populate("department", "name code")
-      .populate("service", "name averageServiceTime")
+      .populate("service", "name averageServiceTime requiredDocuments fee expectedProcessingDays description code")
       .populate("counter", "counterNumber name");
 
     notifyQueueUpdate(appointment.department._id, "tokenCreated", populatedToken);

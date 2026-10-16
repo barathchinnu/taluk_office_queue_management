@@ -31,6 +31,7 @@ const getPageTitle = (pathname) => {
   if (pathname === "/notifications") return "Notification Center";
   if (pathname.startsWith("/display")) return "Public Screen Display";
   if (pathname === "/citizen") return "Citizen Portal Dashboard";
+  if (pathname === "/citizen/profile") return "Citizen Profile & e-Vault";
   if (pathname === "/citizen/take-token") return "Take Queue Token";
   if (pathname === "/citizen/apply") return "Apply Online for Services";
   if (pathname === "/citizen/applications") return "My Applications";

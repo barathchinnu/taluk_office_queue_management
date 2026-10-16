@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { authService } from "../services/api";
-import { getSocket } from "../services/socket";
 import PortalTitleBar from "../components/PortalTitleBar";
 import {
   Building2,
@@ -20,7 +19,6 @@ import {
   KeyRound,
   Info,
   Smartphone,
-  Sparkles,
 } from "lucide-react";
 
 // Helper to generate a realistic 5-character Captcha code
@@ -53,7 +51,7 @@ const Login = () => {
   // OTP flow state
   const [otpStep, setOtpStep] = useState(false); // false = enter contact, true = enter OTP
   const [otpValue, setOtpValue] = useState("");
-  const [realtimeOtp, setRealtimeOtp] = useState("");
+  const [devOtp, setDevOtp] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
 
   // Status states
@@ -78,32 +76,11 @@ const Login = () => {
     return () => clearInterval(interval);
   }, [resendTimer]);
 
-  // Real-time Socket.IO listener for live OTP delivery
-  useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
-
-    const handleOtpReceived = (data) => {
-      const activeIdentifier = authMode === "mobile_otp" ? mobile.trim() : email.trim().toLowerCase();
-      if (data && (!data.identifier || data.identifier === activeIdentifier)) {
-        if (data.otp) {
-          setRealtimeOtp(data.otp);
-          setSuccessMsg(`📱 Real-time OTP received via TNeGOV Gateway: ${data.otp}`);
-        }
-      }
-    };
-
-    socket.on("otp:received", handleOtpReceived);
-    return () => {
-      socket.off("otp:received", handleOtpReceived);
-    };
-  }, [authMode, mobile, email]);
-
   const handleModeChange = (mode) => {
     setAuthMode(mode);
     setOtpStep(false);
     setOtpValue("");
-    setRealtimeOtp("");
+    setDevOtp("");
     setError("");
     setSuccessMsg("");
     refreshCaptcha();
@@ -159,14 +136,12 @@ const Login = () => {
       if (res.success) {
         setOtpStep(true);
         setOtpValue("");
+        setDevOtp(res.devOtp || "");
         setResendTimer(30);
-        if (res.otp) {
-          setRealtimeOtp(res.otp);
-        }
         setSuccessMsg(
           authMode === "mobile_otp"
-            ? `Real-time OTP dispatched to +91 ${mobile}. Valid for 5 minutes.`
-            : `Real-time OTP dispatched to ${email}. Check your inbox / spam folder.`
+            ? `An SMS containing your 6-digit OTP has been sent to +91 ${mobile}. Please check your phone.`
+            : `An OTP verification email has been sent to ${email}. Please check your inbox / spam.`
         );
       } else {
         setError(res.message || "Failed to send OTP. Please try again.");
@@ -430,57 +405,73 @@ const Login = () => {
                   ) : (
                     /* Step 2: Enter OTP */
                     <form onSubmit={handleVerifyOtp} className="space-y-4">
-                      {/* Real-Time SMS Delivery Push Card */}
-                      {realtimeOtp && (
-                        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#0b3b60] to-[#00809d] text-white shadow-md border border-white/20 animate-in fade-in slide-in-from-top-2 duration-200 space-y-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold shrink-0 shadow-xs">
-                                <Smartphone className="w-4 h-4" />
-                              </div>
-                              <div>
-                                <div className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">
-                                  TNeGOV SMS Gateway • Delivered
-                                </div>
-                                <div className="text-xs font-semibold flex items-center gap-1.5 mt-0.5">
-                                  <span>OTP:</span>
-                                  <span className="font-mono font-black text-amber-300 text-sm tracking-widest bg-black/30 px-2 py-0.5 rounded border border-white/10">
-                                    {realtimeOtp}
-                                  </span>
-                                </div>
-                              </div>
+                      {/* Real-time SMS Sent Notice Card */}
+                      <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 shadow-xs space-y-2.5">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                            <Smartphone className="w-5 h-5 animate-pulse" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider">
+                                SMS Dispatched to Mobile
+                              </span>
+                              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                                5 Mins Validity
+                              </span>
+                            </div>
+                            <p className="text-xs text-emerald-900 font-medium mt-1 leading-relaxed">
+                              A 6-digit OTP verification code has been sent via SMS to:
+                            </p>
+                            <div className="text-base font-bold text-emerald-950 tracking-wide font-mono mt-0.5">
+                              +91 {mobile}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] pt-2 border-t border-emerald-200/80 text-emerald-800">
+                          <span>Please check your phone's SMS messages</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOtpStep(false);
+                              setOtpValue("");
+                            }}
+                            className="text-gov-700 hover:text-gov-900 underline font-bold cursor-pointer"
+                          >
+                            Change Number
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Development Mode Helper Card (When real SMS gateway key is not yet set in .env) */}
+                      {devOtp && (
+                        <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 space-y-2 animate-in fade-in shadow-xs">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                              <span className="text-[11px] font-black uppercase tracking-wider text-amber-900">
+                                Development Gateway OTP:
+                              </span>
                             </div>
                             <button
                               type="button"
-                              onClick={() => setOtpValue(realtimeOtp)}
-                              className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
-                              title="Auto-fill OTP into input"
+                              onClick={() => setOtpValue(devOtp)}
+                              className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-black text-xs rounded-lg shadow-2xs transition-all cursor-pointer"
                             >
-                              <CheckCircle2 className="w-3.5 h-3.5 text-slate-950" />
-                              Auto-Fill
+                              Auto-Fill OTP
                             </button>
                           </div>
-                          <div className="flex items-center justify-between text-[10px] text-slate-200 border-t border-white/15 pt-1.5">
-                            <span>SMS sent to +91 {mobile}</span>
-                            <span className="text-amber-200 font-bold">Valid for 5 mins</span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-amber-800">Generated code:</span>
+                            <span className="font-mono font-black text-xl text-slate-950 tracking-widest bg-white px-3 py-1 rounded-xl border border-amber-300 shadow-2xs">
+                              {devOtp}
+                            </span>
                           </div>
+                          <p className="text-[10px] text-amber-800 leading-tight pt-1.5 border-t border-amber-200">
+                            💡 <em>Note:</em> To receive physical SMS on your mobile handset, add your free Fast2SMS API key in <code className="bg-amber-100 font-mono font-bold px-1 rounded">backend/.env</code>.
+                          </p>
                         </div>
                       )}
-
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center justify-between">
-                        <span>OTP dispatched to <strong>+91 {mobile}</strong></span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOtpStep(false);
-                            setOtpValue("");
-                            setRealtimeOtp("");
-                          }}
-                          className="text-gov-700 hover:underline font-bold text-[11px] cursor-pointer"
-                        >
-                          Change Number
-                        </button>
-                      </div>
 
                       <div>
                         <div className="flex items-center justify-between mb-1.5">
@@ -595,57 +586,73 @@ const Login = () => {
                   ) : (
                     /* Step 2: Verify Email OTP */
                     <form onSubmit={handleVerifyOtp} className="space-y-4">
-                      {/* Real-Time Email Delivery Card */}
-                      {realtimeOtp && (
-                        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-[#0b3b60] to-[#00809d] text-white shadow-md border border-white/20 animate-in fade-in slide-in-from-top-2 duration-200 space-y-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold shrink-0 shadow-xs">
-                                <Mail className="w-4 h-4" />
-                              </div>
-                              <div>
-                                <div className="text-[10px] font-bold text-amber-300 uppercase tracking-wider">
-                                  Govt Mail Service • Delivered
-                                </div>
-                                <div className="text-xs font-semibold flex items-center gap-1.5 mt-0.5">
-                                  <span>OTP:</span>
-                                  <span className="font-mono font-black text-amber-300 text-sm tracking-widest bg-black/30 px-2 py-0.5 rounded border border-white/10">
-                                    {realtimeOtp}
-                                  </span>
-                                </div>
-                              </div>
+                      {/* Real-time Email Sent Notice Card */}
+                      <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-950 shadow-xs space-y-2.5">
+                        <div className="flex items-start gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gov-700 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+                            <Mail className="w-5 h-5 animate-pulse" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-[11px] font-bold text-gov-800 uppercase tracking-wider">
+                                Email Verification Dispatched
+                              </span>
+                              <span className="text-[10px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full border border-blue-300">
+                                5 Mins Validity
+                              </span>
+                            </div>
+                            <p className="text-xs text-blue-900 font-medium mt-1 leading-relaxed">
+                              A 6-digit OTP verification code has been dispatched to:
+                            </p>
+                            <div className="text-sm font-bold text-blue-950 tracking-wide font-mono mt-0.5 break-all">
+                              {email}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] pt-2 border-t border-blue-200/80 text-blue-800">
+                          <span>Please check your inbox & spam folder</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOtpStep(false);
+                              setOtpValue("");
+                            }}
+                            className="text-gov-700 hover:text-gov-900 underline font-bold cursor-pointer"
+                          >
+                            Change Email
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Development Mode Helper Card (When real email SMTP key is not yet set in .env) */}
+                      {devOtp && (
+                        <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 space-y-2 animate-in fade-in shadow-xs">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                              <span className="text-[11px] font-black uppercase tracking-wider text-amber-900">
+                                Development Gateway OTP:
+                              </span>
                             </div>
                             <button
                               type="button"
-                              onClick={() => setOtpValue(realtimeOtp)}
-                              className="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs shadow-xs transition-colors shrink-0 flex items-center gap-1 cursor-pointer"
-                              title="Auto-fill OTP into input"
+                              onClick={() => setOtpValue(devOtp)}
+                              className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 font-black text-xs rounded-lg shadow-2xs transition-all cursor-pointer"
                             >
-                              <CheckCircle2 className="w-3.5 h-3.5 text-slate-950" />
-                              Auto-Fill
+                              Auto-Fill OTP
                             </button>
                           </div>
-                          <div className="flex items-center justify-between text-[10px] text-slate-200 border-t border-white/15 pt-1.5">
-                            <span>Sent to {email}</span>
-                            <span className="text-amber-200 font-bold">Valid for 5 mins</span>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-amber-800">Generated code:</span>
+                            <span className="font-mono font-black text-xl text-slate-950 tracking-widest bg-white px-3 py-1 rounded-xl border border-amber-300 shadow-2xs">
+                              {devOtp}
+                            </span>
                           </div>
+                          <p className="text-[10px] text-amber-800 leading-tight pt-1.5 border-t border-amber-200">
+                            💡 <em>Note:</em> To deliver emails directly to Gmail/Outlook inboxes, configure SMTP credentials in <code className="bg-amber-100 font-mono font-bold px-1 rounded">backend/.env</code>.
+                          </p>
                         </div>
                       )}
-
-                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center justify-between">
-                        <span>OTP dispatched to <strong>{email}</strong></span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOtpStep(false);
-                            setOtpValue("");
-                            setRealtimeOtp("");
-                          }}
-                          className="text-gov-700 hover:underline font-bold text-[11px] cursor-pointer"
-                        >
-                          Change Email
-                        </button>
-                      </div>
 
                       <div>
                         <div className="flex items-center justify-between mb-1.5">

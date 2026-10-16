@@ -5,6 +5,7 @@ import { useLanguage } from "../../context/LanguageContext";
 import { useLocation as useGeoLocation } from "../../context/LocationContext";
 import StatusBadge from "../../components/StatusBadge";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import ServiceDetailModal from "../../components/ServiceDetailModal";
 import {
   Building2,
   Users,
@@ -17,11 +18,13 @@ import {
   ArrowRight,
   Shield,
   Radio,
+  FileCheck2,
 } from "lucide-react";
 
 const LiveQueue = () => {
   const [departments, setDepartments] = useState([]);
   const [selectedDeptId, setSelectedDeptId] = useState("");
+  const [selectedServiceModal, setSelectedServiceModal] = useState(null);
   const [queueData, setQueueData] = useState(null);
   const [myToken, setMyToken] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -246,6 +249,17 @@ const LiveQueue = () => {
                 Service: <strong>{tServiceName(myToken.service?.name)}</strong> • Estimated wait:{" "}
                 <strong className="text-emerald-700">~{myToken.estimatedWaitTime ?? 15} mins</strong>
               </div>
+
+              {myToken.service && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedServiceModal(myToken.service)}
+                  className="w-full mt-2 py-2 px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                >
+                  <FileCheck2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>{language === "ta" ? "கவுண்டருக்கு தேவையான ஆவணங்களைக் காண்க" : "View Documents to Carry to Counter"}</span>
+                </button>
+              )}
             </div>
           ) : (
             <div className="py-2 space-y-2">
@@ -398,6 +412,14 @@ const LiveQueue = () => {
           </div>
         )}
       </div>
+
+      {/* Service Detail Modal (Required Documents & Information) */}
+      {selectedServiceModal && (
+        <ServiceDetailModal
+          service={selectedServiceModal}
+          onClose={() => setSelectedServiceModal(null)}
+        />
+      )}
     </div>
   );
 };
