@@ -37,6 +37,37 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    dateOfBirth: {
+      type: String,
+      default: "",
+    },
+    gender: {
+      type: String,
+      enum: ["male", "female", "transgender", "other", ""],
+      default: "",
+    },
+    aadhaarNumber: {
+      type: String,
+      default: "",
+    },
+    address: {
+      doorNo: { type: String, default: "" },
+      street: { type: String, default: "" },
+      villageTown: { type: String, default: "" },
+      taluk: { type: String, default: "" },
+      district: { type: String, default: "" },
+      state: { type: String, default: "Tamil Nadu" },
+      pincode: { type: String, default: "" },
+    },
+    emergencyContact: {
+      name: { type: String, default: "" },
+      phone: { type: String, default: "" },
+      relation: { type: String, default: "" },
+    },
+    preferredLanguage: {
+      type: String,
+      default: "ta",
+    },
   },
   {
     timestamps: true,

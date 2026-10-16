@@ -4,6 +4,7 @@ const router = express.Router();
 
 const {
   getProfile,
+  updateProfile,
   getMyAppointments,
   getMyToken,
   getCurrentQueue,
@@ -23,6 +24,13 @@ router.get(
   protect,
   authorize("citizen"),
   getProfile
+);
+
+router.put(
+  "/profile",
+  protect,
+  authorize("citizen"),
+  updateProfile
 );
 
 

@@ -2,7 +2,7 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/User");
 const Otp = require("../models/Otp");
 const generateToken = require("../utils/generateToken");
-const { sendEmailNotification, sendSmsNotification } = require("../services/notificationService");
+const { sendEmailNotification, sendSmsNotification, getSmsConfig } = require("../services/notificationService");
 const { emitOtpNotification } = require("../sockets/socket");
 
 // ==========================
@@ -203,37 +203,53 @@ const sendOtp = async (req, res) => {
       });
     }
 
-    // 5. Send SMS (Logs to SMS Gateway or sends via configured gateway)
+    // 5. Send SMS (Logs to SMS Gateway or sends via Fast2SMS / Twilio)
+    let smsResult = null;
     if (type === "MOBILE" || mobile) {
-      await sendSmsNotification({
+      smsResult = await sendSmsNotification({
         to: mobile,
         text: `TNeGOV: Your Smart e-Seva login OTP is ${generatedOtp}. Valid for 5 mins. Do not share with anyone. - Govt of Tamil Nadu`,
+        otp: generatedOtp,
       });
     }
 
-    // 6. Broadcast real-time Socket event to client
+    // 6. Broadcast real-time Socket event to client notifying SMS has been dispatched
     emitOtpNotification(identifier, {
       identifier,
-      otp: generatedOtp,
       type,
       expiresAt,
-      message: `TNeGOV: Your OTP is ${generatedOtp}. Valid for 5 minutes.`,
+      message: `TNeGOV: An OTP verification SMS has been sent to ${identifier}.`,
     });
 
     console.log(`\n======================================================`);
-    console.log(`🔐 [REAL-TIME OTP DISPATCHED]`);
+    console.log(`🔐 [REAL-TIME OTP DISPATCHED TO USER MOBILE]`);
     console.log(`   Recipient : ${identifier} (${type})`);
     console.log(`   OTP Code  : >>> ${generatedOtp} <<<`);
     console.log(`   Valid For : 5 Minutes (Expires: ${expiresAt.toLocaleTimeString()})`);
     console.log(`======================================================\n`);
 
+    const isSmsDelivered = smsResult?.success === true;
+    const isMock = type === "MOBILE" ? !isSmsDelivered : false;
+
+    // Fallback: If gateway had an issue, provide devOtp on screen so the user is never blocked
+    const devOtp = isMock ? generatedOtp : undefined;
+
+    let responseMsg = `An OTP verification code has been dispatched to ${identifier}.`;
+    if (isSmsDelivered) {
+      responseMsg = `A real SMS with your OTP code has been sent to +91 ${identifier}. Please check your phone.`;
+    } else if (smsResult?.error) {
+      responseMsg = `Fast2SMS Gateway Note: ${smsResult.error}`;
+    }
+
     return res.status(200).json({
       success: true,
-      message: `OTP sent successfully to ${identifier}`,
+      message: responseMsg,
       identifier,
       type,
       expiresMinutes: 5,
-      otp: generatedOtp, // Real dynamic OTP for real-time auto-fill & notification toast
+      devOtp,
+      isMock,
+      gatewayError: smsResult?.error || null,
     });
   } catch (error) {
     console.error("Send OTP Error:", error);

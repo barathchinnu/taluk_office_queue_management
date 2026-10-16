@@ -38,6 +38,80 @@ const getProfile = async (req, res) => {
 
 
 // =====================================================
+// UPDATE CITIZEN PROFILE
+// =====================================================
+const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const {
+      fullName,
+      phone,
+      dateOfBirth,
+      gender,
+      aadhaarNumber,
+      address,
+      emergencyContact,
+      preferredLanguage,
+    } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "Citizen not found",
+      });
+    }
+
+    if (fullName) user.fullName = fullName.trim();
+    if (phone) user.phone = phone.trim();
+    if (dateOfBirth !== undefined) user.dateOfBirth = dateOfBirth;
+    if (gender !== undefined) user.gender = gender;
+    if (aadhaarNumber !== undefined) user.aadhaarNumber = aadhaarNumber;
+
+    if (address) {
+      user.address = {
+        doorNo: address.doorNo ?? user.address?.doorNo ?? "",
+        street: address.street ?? user.address?.street ?? "",
+        villageTown: address.villageTown ?? user.address?.villageTown ?? "",
+        taluk: address.taluk ?? user.address?.taluk ?? "",
+        district: address.district ?? user.address?.district ?? "",
+        state: address.state ?? user.address?.state ?? "Tamil Nadu",
+        pincode: address.pincode ?? user.address?.pincode ?? "",
+      };
+    }
+
+    if (emergencyContact) {
+      user.emergencyContact = {
+        name: emergencyContact.name ?? user.emergencyContact?.name ?? "",
+        phone: emergencyContact.phone ?? user.emergencyContact?.phone ?? "",
+        relation: emergencyContact.relation ?? user.emergencyContact?.relation ?? "",
+      };
+    }
+
+    if (preferredLanguage) user.preferredLanguage = preferredLanguage;
+
+    await user.save();
+
+    const safeUser = user.toObject();
+    delete safeUser.password;
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully",
+      user: safeUser,
+    });
+  } catch (error) {
+    console.error("Update Profile Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Failed to update profile",
+    });
+  }
+};
+
+
+
+// =====================================================
 // GET MY APPOINTMENTS
 // =====================================================
 const getMyAppointments = async (req, res) => {
@@ -306,6 +380,7 @@ const getCurrentQueue = async (req, res) => {
 
 module.exports = {
   getProfile,
+  updateProfile,
   getMyAppointments,
   getMyToken,
   getCurrentQueue,

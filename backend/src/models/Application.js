@@ -131,7 +131,6 @@ const applicationSchema = new mongoose.Schema(
   }
 );
 
-applicationSchema.index({ applicationNumber: 1 });
 applicationSchema.index({ citizen: 1, createdAt: -1 });
 applicationSchema.index({ department: 1, status: 1 });
 applicationSchema.index({ service: 1, status: 1 });
