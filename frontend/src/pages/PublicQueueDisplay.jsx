@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { departmentService, tokenService } from "../services/api";
 import { getSocket, joinDepartment, leaveDepartment } from "../services/socket";
-import { useLanguage } from "../context/LanguageContext";
+import { useLanguage, translations } from "../context/LanguageContext";
 import {
   Volume2,
   VolumeX,
@@ -39,6 +39,23 @@ const PublicQueueDisplay = () => {
   const [voices, setVoices] = useState([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const currentAudioRef = useRef(null);
+
+  // Stop any active audio playback when component unmounts
+  useEffect(() => {
+    return () => {
+      if (currentAudioRef.current) {
+        try {
+          currentAudioRef.current.pause();
+          currentAudioRef.current.currentTime = 0;
+        } catch (e) {}
+        currentAudioRef.current = null;
+      }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
 
   // Load and cache browser voices for SpeechSynthesis
   useEffect(() => {
@@ -118,82 +135,259 @@ const PublicQueueDisplay = () => {
     }
   };
 
-  // Text-To-Speech announcement in English & Tamil
-  const speakAnnouncement = (tokenText, counterNumber, departmentName) => {
-    if (!window.speechSynthesis) return;
+  // Helper to extract clean Tamil department name without bilingual bullet "•"
+  const getPureTamilDept = (deptName) => {
+    if (!deptName) return "வருவாய்த்துறை";
+    const found = translations?.departments?.[deptName];
+    if (found?.ta) return found.ta;
+    const directName = tDeptName(deptName);
+    if (directName && directName.includes("•")) {
+      return directName.split("•")[1]?.trim() || directName.split("•")[0]?.trim();
+    }
+    return directName || "வருவாய்த்துறை";
+  };
 
+  // Text-To-Speech announcement in English & Tamil with multi-tier audio fallback
+  const speakAnnouncement = (tokenText, counterNumber, departmentName) => {
     try {
-      window.speechSynthesis.cancel();
-      if (window.speechSynthesis.paused) {
-        window.speechSynthesis.resume();
+      // 1. Cancel previous sounds
+      if (currentAudioRef.current) {
+        try {
+          currentAudioRef.current.pause();
+          currentAudioRef.current.currentTime = 0;
+        } catch (e) {}
+        currentAudioRef.current = null;
       }
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+      }
+
       setIsSpeaking(true);
 
       const spacedToken = tokenText.split("").join(" ");
-      const deptEn = departmentName || "";
-      const deptTa = tDeptName(departmentName) || "";
-      const currentVoices = voices.length > 0 ? voices : window.speechSynthesis.getVoices();
+      const deptEn = departmentName || "Revenue Department";
+      const deptTa = getPureTamilDept(departmentName);
 
-      const indianVoice = currentVoices.find(
-        (v) => (v.lang.includes("en-IN") || v.lang.includes("en-GB") || v.lang.includes("en-US")) && !v.name.includes("Google")
-      ) || currentVoices.find((v) => v.lang.startsWith("en")) || currentVoices[0];
+      const tamilPhrase = `கவனிக்கவும், டோக்கன் எண் ${spacedToken}, தயவுசெய்து ${deptTa} கவுண்டர் ${counterNumber}க்கு செல்லவும்.`;
+      const englishPhrase = `Attention please. Token number ${spacedToken}, please proceed to Counter ${counterNumber}, ${deptEn}.`;
 
-      const tamilVoice = currentVoices.find(
-        (v) => v.lang.includes("ta") || v.lang.toLowerCase().includes("ta-in") || v.name.toLowerCase().includes("tamil")
-      );
+      // Helper to play Tamil Audio with multi-tier fallback:
+      // Tier 1: Backend TTS proxy (/api/tts?lang=ta)
+      // Tier 2: Direct Google TTS endpoint
+      // Tier 3: Browser SpeechSynthesis (if Tamil voice installed)
+      // Tier 4: Phonetic Tanglish with Indian English voice
+      const playTamilVoice = (onDone) => {
+        const onFinish = () => {
+          if (onDone) onDone();
+        };
 
-      // Helper to generate Tamil speech utterance
-      const playTamil = (onDone) => {
-        const tamilPhrase = `கவனிக்கவும், டோக்கன் எண் ${spacedToken}, தயவுசெய்து ${deptTa ? deptTa + " " : ""}கவுண்டர் ${counterNumber}க்கு செல்லவும்.`;
-        const taUtterance = new SpeechSynthesisUtterance(tamilPhrase);
-        taUtterance.lang = "ta-IN";
-        taUtterance.rate = 0.85;
-        if (tamilVoice) {
-          taUtterance.voice = tamilVoice;
+        const backendUrl = `/api/tts?text=${encodeURIComponent(tamilPhrase)}&lang=ta`;
+        const directGoogleUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(
+          tamilPhrase
+        )}&tl=ta&client=tw-ob`;
+
+        const fallbackToSpeechSynthesis = () => {
+          try {
+            if (!window.speechSynthesis) {
+              onFinish();
+              return;
+            }
+            window.speechSynthesis.cancel();
+            if (window.speechSynthesis.paused) {
+              window.speechSynthesis.resume();
+            }
+
+            const currentVoices = voices.length > 0 ? voices : window.speechSynthesis.getVoices();
+            const tamilVoice = currentVoices.find(
+              (v) =>
+                (v.lang &&
+                  (v.lang.toLowerCase().startsWith("ta") ||
+                    v.lang.toLowerCase().includes("ta-in") ||
+                    v.lang.toLowerCase().includes("ta_in"))) ||
+                (v.name && v.name.toLowerCase().includes("tamil"))
+            );
+
+            if (tamilVoice) {
+              const taUtterance = new SpeechSynthesisUtterance(tamilPhrase);
+              taUtterance.lang = "ta-IN";
+              taUtterance.rate = 0.88;
+              taUtterance.voice = tamilVoice;
+              taUtterance.onend = onFinish;
+              taUtterance.onerror = () => fallbackToTanglishPhonetics();
+              window.speechSynthesis.speak(taUtterance);
+            } else {
+              fallbackToTanglishPhonetics();
+            }
+          } catch (e) {
+            fallbackToTanglishPhonetics();
+          }
+        };
+
+        const fallbackToTanglishPhonetics = () => {
+          try {
+            if (!window.speechSynthesis) {
+              onFinish();
+              return;
+            }
+            const romanized = `Kavanikkavum. Token number ${spacedToken}. Dhayavu seidhu Counter ${counterNumber}kku sellavum.`;
+            const utter = new SpeechSynthesisUtterance(romanized);
+            utter.rate = 0.82;
+            utter.pitch = 1.0;
+            const currentVoices = voices.length > 0 ? voices : window.speechSynthesis.getVoices();
+            const indVoice =
+              currentVoices.find(
+                (v) =>
+                  (v.lang.includes("en-IN") || v.lang.includes("en-GB") || v.lang.includes("en-US")) &&
+                  !v.name.includes("Google")
+              ) ||
+              currentVoices.find((v) => v.lang.startsWith("en")) ||
+              currentVoices[0];
+            if (indVoice) utter.voice = indVoice;
+            utter.onend = onFinish;
+            utter.onerror = onFinish;
+            window.speechSynthesis.speak(utter);
+          } catch (e) {
+            onFinish();
+          }
+        };
+
+        // Try Tier 1: Backend TTS stream
+        try {
+          const audio = new Audio(backendUrl);
+          currentAudioRef.current = audio;
+          audio.onended = () => {
+            currentAudioRef.current = null;
+            onFinish();
+          };
+          audio.onerror = () => {
+            // Fallback to Tier 2: Direct Google TTS
+            try {
+              const directAudio = new Audio(directGoogleUrl);
+              currentAudioRef.current = directAudio;
+              directAudio.onended = () => {
+                currentAudioRef.current = null;
+                onFinish();
+              };
+              directAudio.onerror = () => {
+                currentAudioRef.current = null;
+                fallbackToSpeechSynthesis();
+              };
+              const p2 = directAudio.play();
+              if (p2 !== undefined) {
+                p2.catch(() => {
+                  currentAudioRef.current = null;
+                  fallbackToSpeechSynthesis();
+                });
+              }
+            } catch (err) {
+              fallbackToSpeechSynthesis();
+            }
+          };
+
+          const p1 = audio.play();
+          if (p1 !== undefined) {
+            p1.catch(() => {
+              // Try direct Google TTS if backend play rejected
+              try {
+                const directAudio = new Audio(directGoogleUrl);
+                currentAudioRef.current = directAudio;
+                directAudio.onended = () => {
+                  currentAudioRef.current = null;
+                  onFinish();
+                };
+                directAudio.onerror = () => {
+                  currentAudioRef.current = null;
+                  fallbackToSpeechSynthesis();
+                };
+                const p2 = directAudio.play();
+                if (p2 !== undefined) {
+                  p2.catch(() => {
+                    currentAudioRef.current = null;
+                    fallbackToSpeechSynthesis();
+                  });
+                }
+              } catch (err) {
+                fallbackToSpeechSynthesis();
+              }
+            });
+          }
+        } catch (e) {
+          fallbackToSpeechSynthesis();
         }
-        taUtterance.onend = () => {
+      };
+
+      // Helper to play English speech utterance
+      const playEnglishSpeech = (onDone) => {
+        const onFinish = () => {
           setIsSpeaking(false);
           if (onDone) onDone();
         };
-        taUtterance.onerror = () => {
-          setIsSpeaking(false);
-          if (onDone) onDone();
-        };
-        window.speechSynthesis.speak(taUtterance);
-      };
 
-      // Helper to generate English speech utterance
-      const playEnglish = (onDone) => {
-        const englishPhrase = `Attention please. Token number ${spacedToken}, please proceed to Counter ${counterNumber}. ${deptEn}`;
-        const enUtterance = new SpeechSynthesisUtterance(englishPhrase);
-        enUtterance.rate = 0.88;
-        enUtterance.pitch = 1.05;
-        if (indianVoice) {
-          enUtterance.voice = indianVoice;
+        try {
+          if (window.speechSynthesis) {
+            const currentVoices = voices.length > 0 ? voices : window.speechSynthesis.getVoices();
+            const indianVoice =
+              currentVoices.find(
+                (v) =>
+                  (v.lang.includes("en-IN") || v.lang.includes("en-GB") || v.lang.includes("en-US")) &&
+                  !v.name.includes("Google")
+              ) ||
+              currentVoices.find((v) => v.lang.startsWith("en")) ||
+              currentVoices[0];
+
+            const enUtterance = new SpeechSynthesisUtterance(englishPhrase);
+            enUtterance.rate = 0.88;
+            enUtterance.pitch = 1.05;
+            if (indianVoice) enUtterance.voice = indianVoice;
+            enUtterance.onend = onFinish;
+            enUtterance.onerror = () => fallbackToEnglishAudio(onFinish);
+            window.speechSynthesis.speak(enUtterance);
+          } else {
+            fallbackToEnglishAudio(onFinish);
+          }
+        } catch (e) {
+          fallbackToEnglishAudio(onFinish);
         }
-        enUtterance.onend = () => {
-          if (onDone) onDone();
-          else setIsSpeaking(false);
-        };
-        enUtterance.onerror = () => {
-          if (onDone) onDone();
-          else setIsSpeaking(false);
-        };
-        window.speechSynthesis.speak(enUtterance);
       };
 
+      const fallbackToEnglishAudio = (onFinish) => {
+        try {
+          const audio = new Audio(`/api/tts?text=${encodeURIComponent(englishPhrase)}&lang=en`);
+          currentAudioRef.current = audio;
+          audio.onended = () => {
+            currentAudioRef.current = null;
+            onFinish();
+          };
+          audio.onerror = () => {
+            currentAudioRef.current = null;
+            onFinish();
+          };
+          const p = audio.play();
+          if (p !== undefined) p.catch(() => onFinish());
+        } catch (err) {
+          onFinish();
+        }
+      };
+
+      // Route announcements based on user's selected language mode
       if (language === "ta") {
-        // Pure Tamil mode
-        playTamil();
+        // Pure Tamil mode: Announce in Tamil only
+        playTamilVoice(() => setIsSpeaking(false));
       } else if (language === "en") {
-        // Pure English mode
-        playEnglish();
+        // Pure English mode: Announce in English only
+        playEnglishSpeech(() => setIsSpeaking(false));
       } else {
-        // "both" Mode: Play English announcement first, followed immediately by Tamil announcement
-        playEnglish(() => {
+        // "both" Mode (Tamil Nadu Government Standard):
+        // 1. Play pure Tamil announcement first
+        // 2. Pause 400ms
+        // 3. Play English announcement
+        playTamilVoice(() => {
           setTimeout(() => {
-            playTamil();
-          }, 300);
+            playEnglishSpeech(() => setIsSpeaking(false));
+          }, 400);
         });
       }
     } catch (err) {
@@ -208,7 +402,7 @@ const PublicQueueDisplay = () => {
       if (audioEnabled) {
         playDingDongChime();
       }
-      if (speechEnabled) {
+      if (speechEnabled && audioEnabled) {
         setTimeout(() => {
           speakAnnouncement(tokenDisplay, counterNumber, departmentName);
         }, 750);
@@ -566,8 +760,22 @@ const PublicQueueDisplay = () => {
             {/* Audio Toggle */}
             <button
               onClick={() => {
-                setAudioEnabled(!audioEnabled);
-                setSpeechEnabled(!speechEnabled);
+                const nextState = !audioEnabled;
+                setAudioEnabled(nextState);
+                setSpeechEnabled(nextState);
+                if (!nextState) {
+                  if (currentAudioRef.current) {
+                    try {
+                      currentAudioRef.current.pause();
+                      currentAudioRef.current.currentTime = 0;
+                    } catch (e) {}
+                    currentAudioRef.current = null;
+                  }
+                  if (window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                  }
+                  setIsSpeaking(false);
+                }
               }}
               className={`p-2.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all ${
                 audioEnabled
@@ -586,11 +794,25 @@ const PublicQueueDisplay = () => {
                 const tokenToCall = nextTokens[0]?.tokenDisplay || "REV007";
                 triggerAnnouncement(tokenToCall, "1", "Revenue Department");
               }}
-              className="px-3 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-transform shadow-xs"
-              title="Test Public Chime & Voice Announcement"
+              className={`px-3 py-2 border rounded-xl text-xs font-bold flex items-center gap-1.5 active:scale-95 transition-all shadow-xs ${
+                isSpeaking
+                  ? "bg-emerald-500/30 text-emerald-300 border-emerald-400 animate-pulse ring-2 ring-emerald-400/50"
+                  : "bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40"
+              }`}
+              title="Test Public Chime & Voice Announcement (Tamil & English)"
             >
-              <Radio className="w-4 h-4 text-amber-400" />
-              <span>Call Next ({nextTokens[0]?.tokenDisplay || "REV007"})</span>
+              <Radio className={`w-4 h-4 ${isSpeaking ? "text-emerald-400 animate-spin" : "text-amber-400"}`} />
+              <span>
+                {isSpeaking ? (
+                  language === "ta"
+                    ? "🔊 ஒலிபரப்பாகிறது..."
+                    : language === "en"
+                    ? "🔊 Announcing..."
+                    : "🔊 தமிழ் + Eng..."
+                ) : (
+                  `Call Next (${nextTokens[0]?.tokenDisplay || "REV007"})`
+                )}
+              </span>
             </button>
 
             {simulatedCall && (

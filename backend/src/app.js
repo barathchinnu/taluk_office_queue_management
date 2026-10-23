@@ -18,6 +18,7 @@ const locationRoutes = require("./routes/locationRoutes");
 const applicationRoutes = require("./routes/applicationRoutes");
 const feedbackRoutes = require("./routes/feedbackRoutes");
 const serviceCatalogRoutes = require("./routes/serviceCatalogRoutes");
+const ttsRoutes = require("./routes/ttsRoutes");
 const path = require("path");
 
 const app = express();
@@ -47,6 +48,7 @@ app.use("/api/locations", locationRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/service-catalog", serviceCatalogRoutes);
+app.use("/api/tts", ttsRoutes);
 
 // Root Health Check
 app.get("/", (req, res) => {
