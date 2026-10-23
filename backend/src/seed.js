@@ -142,6 +142,22 @@ const seedDatabase = async () => {
         expectedProcessingDays: 14,
         requiredDocuments: ["Petition Representation Letter", "Supporting Property / Identity Proofs"],
       },
+      {
+        departmentName: "Revenue",
+        name: "Patta Transfer - Name Change & Sub-division",
+        code: "REV_TRANS",
+        description: "Application for updating registered land owner name in revenue records, title mutation, and field measurement sub-division",
+        averageServiceTime: 15,
+        fee: 100,
+        expectedProcessingDays: 21,
+        requiredDocuments: [
+          "Registered Sale Deed / Title Deed Copy",
+          "Previous Patta & Chitta Extract",
+          "Encumbrance Certificate (EC) for 30 years",
+          "FMB (Field Measurement Book) Sketch Copy",
+          "Applicant Aadhaar & Property Tax Receipt",
+        ],
+      },
 
       // Certificates Services
       {
@@ -174,6 +190,38 @@ const seedDatabase = async () => {
         expectedProcessingDays: 5,
         requiredDocuments: ["EB Electricity Bill / Water Bill", "Rental Agreement / Property Tax Receipt", "Aadhaar Card"],
       },
+      {
+        departmentName: "Certificates",
+        name: "Legal Heir Certificate",
+        code: "CERT_HEIR",
+        description: "Verification and issuance of official legal heir certificate for inheritance, family property settlement, and bank claims",
+        averageServiceTime: 15,
+        fee: 60,
+        expectedProcessingDays: 15,
+        requiredDocuments: [
+          "Deceased Person Death Certificate (Original)",
+          "Aadhaar Card & Photo ID of all Legal Heirs",
+          "Smart Family Ration Card Copy",
+          "Legal Heir Application with Self-Declaration Affidavit",
+          "Birth / Marriage Proof establishing relationship",
+        ],
+      },
+      {
+        departmentName: "Certificates",
+        name: "First Graduate Certificate",
+        code: "CERT_GRAD",
+        description: "Certification for eligible students who are the first in their family to pursue graduation for government college tuition fee concessions",
+        averageServiceTime: 10,
+        fee: 60,
+        expectedProcessingDays: 7,
+        requiredDocuments: [
+          "Applicant Transfer Certificate (TC) & 10th/12th Marksheets",
+          "Parents Transfer Certificate / Educational Qualification Proof",
+          "Family Smart Ration Card",
+          "Applicant & Parents Aadhaar Cards",
+          "Self-Declaration regarding no prior graduate in family",
+        ],
+      },
 
       // Social Welfare Services
       {
@@ -195,6 +243,38 @@ const seedDatabase = async () => {
         fee: 0,
         expectedProcessingDays: 21,
         requiredDocuments: ["Medical Board Disability Certificate (40%+)", "Aadhaar Card", "Bank Account Details", "Passport Size Photos"],
+      },
+      {
+        departmentName: "Social Welfare",
+        name: "Destitute Widow Certificate",
+        code: "WEL_WIDOW",
+        description: "Verification and issuance of destitute widow certificate for social welfare pension, priority employment, and housing benefits",
+        averageServiceTime: 12,
+        fee: 0,
+        expectedProcessingDays: 14,
+        requiredDocuments: [
+          "Husband's Official Death Certificate",
+          "Applicant Age Proof (Aadhaar / Voter ID)",
+          "Income Certificate (Below Poverty Line)",
+          "Legal Heir Certificate / Family Smart Card",
+          "Recent Passport Size Photographs",
+        ],
+      },
+      {
+        departmentName: "Social Welfare",
+        name: "Inter-Caste Marriage Assistance Scheme",
+        code: "WEL_MARR",
+        description: "Financial assistance, 8g gold coin incentive, and welfare certificate for inter-caste married couples under government welfare schemes",
+        averageServiceTime: 12,
+        fee: 0,
+        expectedProcessingDays: 30,
+        requiredDocuments: [
+          "Marriage Registration Certificate",
+          "Community Certificates of Bride & Groom",
+          "Joint Bank Savings Account Passbook",
+          "Age Proof (18+ Bride, 21+ Groom - 10th TC / Aadhaar)",
+          "Joint Wedding Photograph",
+        ],
       },
 
       // Taluk Administration Services

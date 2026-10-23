@@ -124,7 +124,7 @@ const ServiceCatalog = () => {
                 <MapPin className="w-3.5 h-3.5 text-amber-400" />
                 <span className="font-semibold text-slate-300">Stationed Office:</span>
                 <span className="font-bold text-amber-300">{officeName}</span>
-                <span className="text-slate-400">({selectedLocation.taluk || "Tamil Nadu"})</span>
+                <span className="text-slate-400">({selectedLocation?.taluk?.name || (typeof selectedLocation?.taluk === "string" ? selectedLocation.taluk : "Tamil Nadu")})</span>
               </div>
               <button
                 onClick={openLocationModal}

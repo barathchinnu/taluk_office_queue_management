@@ -1337,6 +1337,21 @@ export const translations = {
       ta: "முதல் பட்டதாரி சான்றிதழ்",
       both: "First Graduate • முதல் பட்டதாரி",
     },
+    "Destitute Widow Certificate": {
+      en: "Destitute Widow Certificate",
+      ta: "ஆதரவற்ற விதவை சான்றிதழ்",
+      both: "Destitute Widow • ஆதரவற்ற விதவை",
+    },
+    "Patta Transfer - Name Change & Sub-division": {
+      en: "Patta Transfer - Name Change & Sub-division",
+      ta: "பட்டா மாறுதல் மற்றும் உட்பிரிவு",
+      both: "Patta Transfer • பட்டா மாறுதல்",
+    },
+    "Inter-Caste Marriage Assistance Scheme": {
+      en: "Inter-Caste Marriage Assistance Scheme",
+      ta: "கலப்பு திருமண நிதியுதவி திட்டம்",
+      both: "Inter-Caste Marriage Scheme • கலப்பு திருமண நிதியுதவி",
+    },
   },
 
   // Common Statuses

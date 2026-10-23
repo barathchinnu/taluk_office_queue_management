@@ -142,6 +142,5 @@ const aadhaarApplicationSchema = new mongoose.Schema(
 );
 
 aadhaarApplicationSchema.index({ citizen: 1, createdAt: -1 });
-aadhaarApplicationSchema.index({ applicationNumber: 1 });
 
 module.exports = mongoose.model("AadhaarApplication", aadhaarApplicationSchema);
